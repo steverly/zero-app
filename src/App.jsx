@@ -7,7 +7,7 @@ const FREE_MESSAGES_START = 20;
 const REWARDED_MESSAGES_GAIN = 10;
 const MEMORY_TIMEOUT_MS = 20 * 60 * 1000;
 const MAX_MEMORY_MESSAGES = 8;
-const API_BASE = "https://ton-backend.vercel.app";
+const API_BASE = "https://zero-app-ebsv.onrender.com";
 
 // --------------------
 // SFX
