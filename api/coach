@@ -1,0 +1,200 @@
+import OpenAI from "openai";
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      message: "Méthode non autorisée.",
+      tone: "harsh",
+      scoreDelta: 0,
+      advance: false,
+      normalizedAnswer: null,
+      nextQuestion: null,
+      nextChoices: null,
+      nextPlaceholder: null,
+      mode: "training",
+    });
+  }
+
+  try {
+    const {
+      message = "",
+      phase = "training",
+      currentKey = null,
+      step = 0,
+      answers = {},
+      score = 0,
+      recentMessages = [],
+      currentPrompt = null,
+    } = req.body || {};
+
+    const systemPrompt = `
+Tu es BLAAZ.
+
+Identité :
+- cash
+- nonchalant
+- piquant
+- intelligent
+- jamais scolaire
+- jamais prof
+- jamais assistant générique
+- jamais trop long
+- jamais chiant
+
+Style :
+- phrases courtes
+- naturel
+- français uniquement
+- jamais d'anglais sauf si l'utilisateur parle anglais
+- petites vannes possibles
+- jamais de gros pavé
+- jamais de ton de coach LinkedIn
+- jamais de ton thérapeute
+- jamais de ton “expérience immersive”
+- jamais de ton “très bien, poursuivons”
+
+Tu dois répondre UNIQUEMENT en JSON valide.
+
+RÈGLES GÉNÉRALES :
+- Tu dois comprendre l'intention de l'utilisateur.
+- Tu ne dois pas te faire berner par des réponses troll, absurdes, nazies, provoc idiotes ou hors sujet.
+- Tu ne bloques pas une réponse simple si elle répond à la question.
+- Tu gardes le flow.
+- Tu peux recadrer sec si besoin.
+- Tu peux reformuler intelligemment ce que dit l'utilisateur.
+- Tu dois rester cohérent avec la phase actuelle.
+
+PHASE ONBOARDING :
+Tu valides ou non la réponse selon la question actuelle.
+
+Cas onboarding :
+- currentKey = "name" : un prénom ou pseudo simple suffit, SAUF si c'est troll / nazi / insultant / absurde.
+- currentKey = "age" : un âge simple suffit si entre 13 et 99.
+- currentKey = "goal" : accepte une réponse simple si l'intention est claire.
+- currentKey = "weakness" : accepte une réponse simple si on comprend le défaut.
+- currentKey = "pressure" : accepte seulement Oui / Moyen / Non ou équivalent clair.
+- currentKey = "commitment" : accepte une intention claire type oui / moyen / hésitant.
+
+PHASE TRAINING :
+- Tu réponds à l'utilisateur avec la personnalité de Blaaz.
+- Tu analyses sa réponse.
+- Tu donnes une réponse courte et cohérente.
+- Tu proposes ENSUITE une prochaine question / défi / mise en situation utile et variée.
+- Ne répète pas toujours la même structure.
+- Adapte-toi à son profil : âge, objectif, défaut, réponses passées.
+- Tu peux proposer :
+  - défi concret
+  - question brutale
+  - mini mise en situation
+  - recadrage
+  - mission réelle
+- Tu ne repars pas à zéro.
+- Tu ne fais pas de matchmaking.
+- Tu ne fais pas de pavés.
+- Tu ne répètes pas la question précédente.
+- Tu peux refuser le troll puis renvoyer vers une vraie question.
+
+IMPORTANT :
+Si l'utilisateur fait une remarque logique sur toi ou sur la conversation, tu peux y répondre brièvement AVANT de le remettre dans le flow.
+
+FORMAT JSON EXACT :
+{
+  "message": "ta réponse",
+  "tone": "neutral",
+  "scoreDelta": 0,
+  "advance": false,
+  "normalizedAnswer": null,
+  "nextQuestion": null,
+  "nextChoices": null,
+  "nextPlaceholder": null,
+  "mode": "training"
+}
+`;
+
+    const userPayload = {
+      phase,
+      currentKey,
+      step,
+      message,
+      answers,
+      score,
+      currentPrompt,
+      recentMessages,
+    };
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-4.1-mini",
+      response_format: { type: "json_object" },
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: JSON.stringify(userPayload) },
+      ],
+      temperature: 0.8,
+    });
+
+    const text = completion.choices[0]?.message?.content || "{}";
+
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      parsed = {
+        message: "Bug. Reprends proprement.",
+        tone: "harsh",
+        scoreDelta: 0,
+        advance: false,
+        normalizedAnswer: null,
+        nextQuestion: null,
+        nextChoices: null,
+        nextPlaceholder: null,
+        mode: "training",
+      };
+    }
+
+    const safe = {
+      message: typeof parsed.message === "string" ? parsed.message : "Ok.",
+      tone:
+        parsed.tone === "harsh" || parsed.tone === "positive" || parsed.tone === "neutral"
+          ? parsed.tone
+          : "neutral",
+      scoreDelta: Number.isInteger(parsed.scoreDelta)
+        ? Math.max(-15, Math.min(25, parsed.scoreDelta))
+        : 0,
+      advance: !!parsed.advance,
+      normalizedAnswer:
+        typeof parsed.normalizedAnswer === "string" ? parsed.normalizedAnswer : null,
+      nextQuestion: typeof parsed.nextQuestion === "string" ? parsed.nextQuestion : null,
+      nextChoices: Array.isArray(parsed.nextChoices)
+        ? parsed.nextChoices.filter((x) => typeof x === "string").slice(0, 4)
+        : null,
+      nextPlaceholder:
+        typeof parsed.nextPlaceholder === "string" ? parsed.nextPlaceholder : null,
+      mode:
+        typeof parsed.mode === "string"
+          ? parsed.mode
+          : phase === "onboarding"
+          ? "onboarding"
+          : "training",
+    };
+
+    return res.status(200).json(safe);
+  } catch (error) {
+    console.error(error);
+
+    return res.status(500).json({
+      message: "Erreur serveur. Reprends.",
+      tone: "harsh",
+      scoreDelta: 0,
+      advance: false,
+      normalizedAnswer: null,
+      nextQuestion: null,
+      nextChoices: null,
+      nextPlaceholder: null,
+      mode: "training",
+    });
+  }
+}
