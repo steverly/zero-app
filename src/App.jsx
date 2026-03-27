@@ -499,22 +499,7 @@ export default function App() {
   const MAX_ADS_IN_ROW = 3;
 
 
-  if (!appReady) {
-  return (
-    <div className="app app-loader-screen">
-      <div className="bg-gradient" />
-      <div className="bg-glow bg-glow-1" />
-      <div className="bg-glow bg-glow-2" />
-      <div className="bg-glow bg-glow-3" />
-
-      <div className="startup-loader">
-        <div className="startup-logo">Zero</div>
-        <div className="startup-ring" />
-        <div className="startup-text">préparation...</div>
-      </div>
-    </div>
-  );
-} 
+  
 
   useEffect(() => {
     try {
@@ -580,6 +565,8 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, []);
 
+
+  
   const sessionDurationSeconds = () =>
     Math.max(1, Math.floor((Date.now() - sessionStartedAtRef.current) / 1000));
 
@@ -708,7 +695,22 @@ useEffect(() => {
 };
 
  
+if (!appReady) {
+  return (
+    <div className="app app-loader-screen">
+      <div className="bg-gradient" />
+      <div className="bg-glow bg-glow-1" />
+      <div className="bg-glow bg-glow-2" />
+      <div className="bg-glow bg-glow-3" />
 
+      <div className="startup-loader">
+        <div className="startup-logo">Zero</div>
+        <div className="startup-ring" />
+        <div className="startup-text">préparation...</div>
+      </div>
+    </div>
+  );
+} 
   return (
     <div className="app">
       <div className="bg-gradient" />
