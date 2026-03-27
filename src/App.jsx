@@ -530,17 +530,20 @@ export default function App() {
 useEffect(() => {
   let cancelled = false;
 
+  const start = Date.now();
+
   const warmup = async () => {
     try {
       await fetch(`${API_BASE}/api/health`);
     } catch {
       // ignore
     } finally {
-      if (!cancelled) {
-        setTimeout(() => {
-          setAppReady(true);
-        }, 900);
-      }
+      const elapsed = Date.now() - start;
+      const delay = Math.max(1200 - elapsed, 0);
+
+      setTimeout(() => {
+        if (!cancelled) setAppReady(true);
+      }, delay);
     }
   };
 
