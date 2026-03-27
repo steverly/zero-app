@@ -929,6 +929,11 @@ app.post("/api/upgrade", async (req, res) => {
 
 const PORT = process.env.PORT || 3001;
 
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ ok: true });
+});
+
+
 app.listen(PORT, () => {
   console.log(`Serveur lancé sur http://localhost:${PORT}`);
 });

@@ -534,7 +534,9 @@ useEffect(() => {
 
   const warmup = async () => {
     try {
-      await fetch(`${API_BASE}/api/health`);
+      await fetch(`${API_BASE}/api/health`, {
+        method: "GET",
+      });
     } catch {
       // ignore
     } finally {
@@ -542,7 +544,9 @@ useEffect(() => {
       const delay = Math.max(1200 - elapsed, 0);
 
       setTimeout(() => {
-        if (!cancelled) setAppReady(true);
+        if (!cancelled) {
+          setAppReady(true);
+        }
       }, delay);
     }
   };
