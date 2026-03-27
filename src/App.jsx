@@ -258,10 +258,7 @@ function Composer({
 }) {
   const [isFocused, setIsFocused] = useState(false);
   const remaining = maxChars - value.length;
-  const canSend =
-    value.trim().length > 0 &&
-    value.length <= maxChars &&
-    !disabled &&
+
     messagesLeft > 0;
 
   const handleSubmit = () => {
@@ -290,10 +287,10 @@ function Composer({
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          placeholder={messagesLeft > 0 ? "Sois direct." : "T’es bloqué."}
+          placeholder="Sois direct."
           maxLength={maxChars}
           rows={1}
-          disabled={disabled || messagesLeft <= 0}
+          disabled={disabled}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {
               e.preventDefault();
