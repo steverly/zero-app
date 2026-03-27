@@ -461,7 +461,7 @@ export default function App() {
 
   const [messagesLeft, setMessagesLeft] = useState(FREE_MESSAGES_START);
   const [messagesUsed, setMessagesUsed] = useState(0);
-
+  const [appReady, setAppReady] = useState(false);
   const [conversationHistory, setConversationHistory] = useState(() => {
     try {
       const raw = localStorage.getItem("zero_conversation_history");
@@ -498,6 +498,24 @@ export default function App() {
   const title = useMemo(() => "Zero", []);
   const MAX_ADS_IN_ROW = 3;
 
+
+  if (!appReady) {
+  return (
+    <div className="app app-loader-screen">
+      <div className="bg-gradient" />
+      <div className="bg-glow bg-glow-1" />
+      <div className="bg-glow bg-glow-2" />
+      <div className="bg-glow bg-glow-3" />
+
+      <div className="startup-loader">
+        <div className="startup-logo">Zero</div>
+        <div className="startup-ring" />
+        <div className="startup-text">préparation...</div>
+      </div>
+    </div>
+  );
+} 
+
   useEffect(() => {
     try {
       localStorage.setItem(
@@ -508,6 +526,30 @@ export default function App() {
       // ignore
     }
   }, [conversationHistory]);
+
+useEffect(() => {
+  let cancelled = false;
+
+  const warmup = async () => {
+    try {
+      await fetch(`${API_BASE}/api/health`);
+    } catch {
+      // ignore
+    } finally {
+      if (!cancelled) {
+        setTimeout(() => {
+          setAppReady(true);
+        }, 900);
+      }
+    }
+  };
+
+  warmup();
+
+  return () => {
+    cancelled = true;
+  };
+}, []);
 
   useEffect(() => {
     const now = Date.now();
@@ -555,7 +597,7 @@ export default function App() {
       });
       setPaywallLine(data.line);
     } catch {
-      setPaywallLine("T’as vidé. Regarde une pub ou prends l’illimité.");
+      setPaywallLine("T’as vidé tes messages. Regarde une pub ou prends l’illimité..");
     } finally {
       setPaywallLoading(false);
     }
@@ -573,7 +615,7 @@ export default function App() {
       });
       setPremiumLine(data.line);
     } catch {
-      setPremiumLine("Illimité, sans pub. Là tu parles tranquille.");
+      setPremiumLine("Illimité, sans pub. Là tu parles tranquille");
     } finally {
       setPremiumLoading(false);
     }
@@ -658,12 +700,7 @@ export default function App() {
   }
 };
 
-  useEffect(() => {
-    if (!loading && messagesLeft === 0) {
-      openPaywall();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [messagesLeft, loading]);
+ 
 
   return (
     <div className="app">

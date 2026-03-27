@@ -416,6 +416,7 @@ Exemples d’esprit possibles :
 - "t’as essayé au moins ?"
 - "t’es pas net là"
 - "eh réveille-toi imbécile"
+- "oui mais je m'en fous"
 
 Transitions plus soft :
 - "bah voilà"
@@ -707,6 +708,18 @@ Important :
 - pas de liste
 - pas de guillemets
 
+Règles :
+- tu évites les points à la fin
+- tu n’utilises presque jamais de point final
+- tu préfères des phrases brutes
+- tu peux utiliser "?" naturellement
+- tu peux utiliser une virgule si c’est utile
+- pas de ponctuation parfaite
+- pas de style écrit
+- pas de tirets longs
+- pas de doubles tirets
+- pas de ponctuation théâtrale
+
 INTERDIT :
 - mentionner un nombre de messages
 - dire "30", "10", etc
@@ -791,6 +804,10 @@ async function generateText({ systemPrompt, userMessage, messages, maxTokens = 5
 
   return completion.choices[0]?.message?.content?.trim() || "";
 }
+
+app.get("/api/health", (req, res) => {
+  res.status(200).json({ ok: true });
+});
 
 app.post("/api/reply", async (req, res) => {
   try {

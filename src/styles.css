@@ -678,3 +678,50 @@ textarea {
     height: 44px;
   }
 }
+
+
+.app-loader-screen {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.startup-loader {
+  position: relative;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.startup-logo {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--text);
+  text-shadow: 0 2px 20px rgba(155, 135, 245, 0.25);
+}
+
+.startup-ring {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  border: 3px solid rgba(155, 135, 245, 0.18);
+  border-top-color: rgba(155, 135, 245, 0.9);
+  animation: startup-spin 1s linear infinite;
+  box-shadow: 0 0 24px rgba(155, 135, 245, 0.18);
+}
+
+.startup-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  letter-spacing: 0.04em;
+}
+
+@keyframes startup-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
