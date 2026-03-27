@@ -600,72 +600,63 @@ export default function App() {
   };
 
   const handleSubmit = async () => {
-    if (messagesLeft <= 0) {
-  setPaywallOpen(true);
-  return;
-}
-useEffect(() => {
+  const clean = input.trim();
+
+  if (!clean || loading) return;
+
   if (messagesLeft <= 0) {
-    setPaywallOpen(true);
+    openPaywall();
+    return;
   }
-}, [messagesLeft]);
-    const clean = input.trim();
 
-    if (!clean || loading) return;
+  const now = Date.now();
+  const recentHistory = conversationHistory
+    .filter((item) => now - item.at < MEMORY_TIMEOUT_MS)
+    .slice(-MAX_MEMORY_MESSAGES);
 
-    if (messagesLeft <= 0) {
-      openPaywall();
-      return;
+  setError("");
+  setInput("");
+  setReply("");
+  setLoading(true);
+
+  setFlyingId((prev) => prev + 1);
+  setFlyingMessage(clean);
+  clearFlyingLater();
+
+  try {
+    const data = await sendToBot({
+      message: clean,
+      messagesUsed,
+      sessionDurationSeconds: sessionDurationSeconds(),
+      conversationHistory: recentHistory,
+    });
+
+    setReply(data.reply);
+    setMessagesLeft((prev) => Math.max(0, prev - 1));
+    setMessagesUsed((prev) => prev + 1);
+
+    setConversationHistory((prev) => {
+      const base = prev
+        .filter((item) => now - item.at < MEMORY_TIMEOUT_MS)
+        .slice(-MAX_MEMORY_MESSAGES + 2);
+
+      return [
+        ...base,
+        { role: "user", text: clean, at: now },
+        { role: "assistant", text: data.reply, at: Date.now() },
+      ];
+    });
+
+    if ((messagesUsed + 1) % 4 === 0) {
+      setAdCountInRow(0);
     }
-
-    const now = Date.now();
-    const recentHistory = conversationHistory
-      .filter((item) => now - item.at < MEMORY_TIMEOUT_MS)
-      .slice(-MAX_MEMORY_MESSAGES);
-
-    setError("");
-    setInput("");
+  } catch (err) {
     setReply("");
-    setLoading(true);
-
-    setFlyingId((prev) => prev + 1);
-    setFlyingMessage(clean);
-    clearFlyingLater();
-
-    try {
-      const data = await sendToBot({
-        message: clean,
-        messagesUsed,
-        sessionDurationSeconds: sessionDurationSeconds(),
-        conversationHistory: recentHistory,
-      });
-
-      setReply(data.reply);
-      setMessagesLeft((prev) => Math.max(0, prev - 1));
-      setMessagesUsed((prev) => prev + 1);
-
-      setConversationHistory((prev) => {
-        const base = prev
-          .filter((item) => now - item.at < MEMORY_TIMEOUT_MS)
-          .slice(-MAX_MEMORY_MESSAGES + 2);
-
-        return [
-          ...base,
-          { role: "user", text: clean, at: now },
-          { role: "assistant", text: data.reply, at: Date.now() },
-        ];
-      });
-
-      if ((messagesUsed + 1) % 4 === 0) {
-        setAdCountInRow(0);
-      }
-    } catch (err) {
-      setReply("");
-      setError(err?.message || "Ça a planté.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    setError(err?.message || "Ça a planté.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     if (!loading && messagesLeft === 0) {

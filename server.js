@@ -9,10 +9,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: [
-      "http://localhost:5173",
-      "https://aura-60cuf48p5-steverlys-projects.vercel.app",
-    ],
+    origin: true,
   })
 );
 
