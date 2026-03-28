@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { initAdMob, showRewardedAd } from "./admob";
 import "./styles.css";
 
 const MAX_CHARS = 120;
-const FREE_MESSAGES_START = 20;
+const FREE_MESSAGES_START = 6;
 const REWARDED_MESSAGES_GAIN = 10;
 const MEMORY_TIMEOUT_MS = 20 * 60 * 1000;
 const MAX_MEMORY_MESSAGES = 8;
@@ -258,8 +259,7 @@ function Composer({
 }) {
   const [isFocused, setIsFocused] = useState(false);
   const remaining = maxChars - value.length;
-
-    messagesLeft > 0;
+  const canSend = !disabled && value.trim().length > 0;
 
   const handleSubmit = () => {
     if (canSend) {
@@ -510,34 +510,37 @@ export default function App() {
   }, [conversationHistory]);
 
 useEffect(() => {
-  let cancelled = false;
+  setAppReady(false);
 
-  const start = Date.now();
+  const controller = new AbortController();
 
-  const warmup = async () => {
-    try {
-      await fetch(`${API_BASE}/api/health`, {
-        method: "GET",
-      });
-    } catch {
-      // ignore
-    } finally {
-      const elapsed = Date.now() - start;
-      const delay = Math.max(1200 - elapsed, 0);
+  const readyTimer = setTimeout(() => {
+    setAppReady(true);
+  }, 800);
 
-      setTimeout(() => {
-        if (!cancelled) {
-          setAppReady(true);
-        }
-      }, delay);
-    }
-  };
+  fetch(`${API_BASE}/api/health`, {
+    method: "GET",
+    signal: controller.signal,
+  }).catch(() => {
+    // ignore
+  });
 
-  warmup();
+  const abortTimer = setTimeout(() => {
+    controller.abort();
+  }, 2500);
 
   return () => {
-    cancelled = true;
+    controller.abort();
+    clearTimeout(readyTimer);
+    clearTimeout(abortTimer);
   };
+}, []);
+
+
+useEffect(() => {
+  initAdMob().catch(() => {
+    // ignore
+  });
 }, []);
 
   useEffect(() => {
@@ -612,25 +615,35 @@ useEffect(() => {
     }
   };
 
-  const handleRewardedAd = async () => {
-    sfx.button();
+const handleRewardedAd = async () => {
+  sfx.button();
 
-    if (adCountInRow >= MAX_ADS_IN_ROW) {
-      setPaywallLine("C’est bon. Pause. T’as déjà assez gratté là.");
-      return;
-    }
+  if (adCountInRow >= MAX_ADS_IN_ROW) {
+    setPaywallLine("C’est bon. Pause. T’as déjà assez gratté là.");
+    return;
+  }
 
-    setPaywallLoading(true);
+  setPaywallLoading(true);
 
-    setTimeout(() => {
+  try {
+    const rewarded = await showRewardedAd();
+
+    if (rewarded) {
       setMessagesLeft((prev) => prev + REWARDED_MESSAGES_GAIN);
       setAdCountInRow((prev) => prev + 1);
-      setPaywallLoading(false);
       setPaywallOpen(false);
       setReply("Re");
       sfx.arrive();
-    }, 1200);
-  };
+    } else {
+      setPaywallLine("Pas de récompense. Va jusqu’au bout.");
+    }
+  } catch (err) {
+    console.log("Ad error:", err);
+    setPaywallLine("Pub indispo pour l’instant. Réessaie.");
+  } finally {
+    setPaywallLoading(false);
+  }
+};
 
   const handleSubmit = async () => {
   const clean = input.trim();
@@ -638,9 +651,15 @@ useEffect(() => {
   if (!clean || loading) return;
 
   if (messagesLeft <= 0) {
+  setLoading(true);
+
+  setTimeout(() => {
+    setLoading(false);
     openPaywall();
-    return;
-  }
+  }, 700); // tweak entre 600-900
+
+  return;
+}
 
   const now = Date.now();
   const recentHistory = conversationHistory

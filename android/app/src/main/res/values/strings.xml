@@ -1,7 +1,8 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">AURA</string>
-    <string name="title_activity_main">AURA</string>
-    <string name="package_name">com.aura.app</string>
-    <string name="custom_url_scheme">com.aura.app</string>
+    <string name="app_name">Zero</string>
+    <string name="title_activity_main">Zero</string>
+    <string name="package_name">com.steverly.zero</string>
+    <string name="custom_url_scheme">com.steverly.zero</string>
+    <string name="admob_app_id">ca-app-pub-8651557471567142~6747608537</string>
 </resources>

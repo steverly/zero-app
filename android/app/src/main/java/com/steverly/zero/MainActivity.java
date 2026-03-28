@@ -1,4 +1,4 @@
-package com.aura.app;
+package com.steverly.zero;
 
 import com.getcapacitor.BridgeActivity;
 

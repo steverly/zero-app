@@ -1,0 +1,62 @@
+import { AdMob, RewardAdPluginEvents } from "@capacitor-community/admob";
+
+const TEST_REWARDED_ID = "ca-app-pub-3940256099942544/5224354917";
+
+export async function initAdMob() {
+  await AdMob.initialize();
+}
+
+export async function showRewardedAd() {
+  await AdMob.prepareRewardVideoAd({
+    adId: TEST_REWARDED_ID,
+    isTesting: true,
+  });
+
+  return new Promise(async (resolve, reject) => {
+    let rewarded = false;
+
+    let rewardListener;
+    let dismissListener;
+    let failListener;
+
+    const cleanup = async () => {
+      try {
+        if (rewardListener) await rewardListener.remove();
+        if (dismissListener) await dismissListener.remove();
+        if (failListener) await failListener.remove();
+      } catch {
+        // ignore
+      }
+    };
+
+    rewardListener = await AdMob.addListener(
+      RewardAdPluginEvents.Rewarded,
+      () => {
+        rewarded = true;
+      }
+    );
+
+    dismissListener = await AdMob.addListener(
+      RewardAdPluginEvents.Dismissed,
+      async () => {
+        await cleanup();
+        resolve(rewarded);
+      }
+    );
+
+    failListener = await AdMob.addListener(
+      RewardAdPluginEvents.FailedToShow,
+      async (error) => {
+        await cleanup();
+        reject(error);
+      }
+    );
+
+    try {
+      await AdMob.showRewardVideoAd();
+    } catch (err) {
+      await cleanup();
+      reject(err);
+    }
+  });
+}
