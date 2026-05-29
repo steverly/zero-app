@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { initAdMob, showRewardedAd } from "./admob";
 import "./styles.css";
+import { Purchases } from '@revenuecat/purchases-capacitor';
 
 const MAX_CHARS = 120;
 const FREE_MESSAGES_START = 6;
@@ -239,7 +240,7 @@ function CenterReply({ loading, reply }) {
               {reply ? (
                 <TypewriterText text={reply} />
               ) : (
-                <span className="reply-placeholder">Balance ton truc.</span>
+                <span className="reply-placeholder">Parle à Zero</span>
               )}
             </div>
           </motion.div>
@@ -389,6 +390,8 @@ function PaywallModal({
               </button>
             </div>
 
+
+
             <button className="modal-close" type="button" onClick={onClose}>
               Fermer
             </button>
@@ -399,7 +402,14 @@ function PaywallModal({
   );
 }
 
-function PremiumModal({ open, loading, line, onClose }) {
+function PremiumModal({
+  open,
+  loading,
+  line,
+  onClose,
+  onPurchase,
+  onRestore
+}) {
   return (
     <AnimatePresence>
       {open ? (
@@ -430,16 +440,24 @@ function PremiumModal({ open, loading, line, onClose }) {
               <div>Accès direct</div>
             </div>
 
-            <button
-              className="modal-btn modal-btn-primary"
-              type="button"
-              onClick={() => {
-                sfx.button();
-                alert("Branche ici ton vrai achat abonnement.");
-              }}
-            >
-              Prendre l’illimité
-            </button>
+           <button
+  className="modal-btn modal-btn-primary"
+  type="button"
+  onClick={() => {
+    sfx.button(); // Le petit son reste ici !
+    onPurchase(); // Et ça lance le vrai achat juste après
+  }}
+>
+  Prendre l’illimité
+</button>
+
+<button
+  className="restore-btn"
+  type="button"
+  onClick={onRestore}
+>
+  Restaurer les achats
+</button>
 
             <button className="modal-close" type="button" onClick={onClose}>
               Fermer
@@ -457,6 +475,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
 
   const [messagesLeft, setMessagesLeft] = useState(FREE_MESSAGES_START);
+  const [isPremium, setIsPremium] = useState(false);
   const [messagesUsed, setMessagesUsed] = useState(0);
   const [appReady, setAppReady] = useState(false);
   const [conversationHistory, setConversationHistory] = useState(() => {
@@ -512,6 +531,30 @@ export default function App() {
 useEffect(() => {
   setAppReady(false);
 
+  // 1. Connexion automatique à RevenueCat
+ const initRevenueCat = async () => {
+  try {
+    await Purchases.configure({
+      apiKey: "appl_hYOtUCSOdGEUIRPjilzRIKgZGMH"
+    });
+
+    console.log("RevenueCat prêt !");
+
+    // Vérifie si déjà premium
+    const customerInfo = await Purchases.getCustomerInfo();
+
+    if (customerInfo.entitlements.active["premium"]) {
+      setIsPremium(true);
+      setMessagesLeft(99999);
+    }
+
+  } catch (e) {
+    console.log("Erreur RevenueCat :", e);
+  }
+};
+  initRevenueCat();
+
+  // 2. Le reste de ton code d'origine (on n'y touche pas)
   const controller = new AbortController();
 
   const readyTimer = setTimeout(() => {
@@ -650,13 +693,13 @@ const handleRewardedAd = async () => {
 
   if (!clean || loading) return;
 
-  if (messagesLeft <= 0) {
+if (!isPremium && messagesLeft <= 0) {
   setLoading(true);
 
   setTimeout(() => {
     setLoading(false);
     openPaywall();
-  }, 700); // tweak entre 600-900
+  }, 700);
 
   return;
 }
@@ -684,7 +727,9 @@ const handleRewardedAd = async () => {
     });
 
     setReply(data.reply);
-    setMessagesLeft((prev) => Math.max(0, prev - 1));
+  if (!isPremium) {
+  setMessagesLeft((prev) => Math.max(0, prev - 1));
+}
     setMessagesUsed((prev) => prev + 1);
 
     setConversationHistory((prev) => {
@@ -707,6 +752,44 @@ const handleRewardedAd = async () => {
     setError(err?.message || "Ça a planté.");
   } finally {
     setLoading(false);
+  }
+};
+
+
+const handleRestorePurchases = async () => {
+  try {
+    const customerInfo = await Purchases.restorePurchases();
+
+    if (customerInfo.entitlements.active["premium"]) {
+      setIsPremium(true);
+      setMessagesLeft(99999);
+      alert("Abonnement restauré");
+    }
+  } catch (e) {
+    alert("Impossible de restaurer");
+  }
+};
+
+const handlePurchasePremium = async () => {
+  sfx.button();
+  setPremiumLoading(true);
+  try {
+    const purchaseResult = await Purchases.purchaseProduct({
+      productIdentifier: 'zero_premium_monthly'
+    });
+    
+    // Si l'achat fonctionne :
+setIsPremium(true);
+setMessagesLeft(99999);
+    setPremiumOpen(false);
+    setPaywallOpen(false);
+    alert("Achat réussi ! 🎉");
+  } catch (err) {
+    if (!err.userCancelled) {
+      alert("Erreur lors de l'achat : " + err.message);
+    }
+  } finally {
+    setPremiumLoading(false);
   }
 };
 
@@ -786,12 +869,14 @@ if (!appReady) {
         maxAdsInRow={MAX_ADS_IN_ROW}
       />
 
-      <PremiumModal
-        open={premiumOpen}
-        loading={premiumLoading}
-        line={premiumLine}
-        onClose={() => setPremiumOpen(false)}
-      />
+<PremiumModal
+  open={premiumOpen}
+  loading={premiumLoading}
+  line={premiumLine}
+  onClose={() => setPremiumOpen(false)}
+  onPurchase={handlePurchasePremium}
+  onRestore={handleRestorePurchases}
+/>
     </div>
   );
 }
