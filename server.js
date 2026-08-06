@@ -142,8 +142,8 @@ function normalizeFollowUp(input) {
     shouldSend,
     message: shouldSend ? message : "",
     delayMs: shouldSend
-      ? clamp(source.delayMs, 900, 2600, 1400)
-      : 0,
+  ? Math.min(2600, Math.max(900, Number(source.delayMs) || 1400))
+  : 0,
   };
 }
 
