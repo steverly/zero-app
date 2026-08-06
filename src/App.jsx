@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { initAdMob, showRewardedAd } from "./admob";
 import "./styles.css";
 import { Purchases } from '@revenuecat/purchases-capacitor';
+import ZeroEyes from "./ZeroEyes";
 
 const MAX_CHARS = 2000;
 const FREE_MESSAGES_START = 6;
@@ -1031,10 +1032,11 @@ if (!appReady) {
       </header>
 
       <main className="main-area">
-        <InteractiveBackground />
-        <FlyingMessage text={flyingMessage} id={flyingId} />
-        <CenterReply loading={loading} reply={error || reply} />
-      </main>
+  <InteractiveBackground />
+  <ZeroEyes mood={mood} action={zeroAction} />
+  <FlyingMessage text={flyingMessage} id={flyingId} />
+  <CenterReply loading={loading} reply={error || reply} />
+</main>
 
       <Composer
         value={input}
