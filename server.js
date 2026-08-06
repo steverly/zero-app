@@ -129,6 +129,24 @@ function normalizeAction(action) {
   return ALLOWED_ACTIONS.has(action) ? action : "none";
 }
 
+function normalizeFollowUp(input) {
+  const source = input && typeof input === "object" ? input : {};
+  const message = cleanReply(source.message);
+
+  const shouldSend =
+    source.shouldSend === true &&
+    message.length > 0 &&
+    message.length <= 300;
+
+  return {
+    shouldSend,
+    message: shouldSend ? message : "",
+    delayMs: shouldSend
+      ? clamp(source.delayMs, 900, 2600, 1400)
+      : 0,
+  };
+}
+
 function buildHistory(conversationHistory) {
   if (!Array.isArray(conversationHistory)) return [];
 
@@ -538,7 +556,57 @@ plus seulement si le sujet le demande vraiment
 
 ne fais pas de pavé sans demande
 
-ne coupe pas non plus une vraie idée juste pour être court
+ne coupe pas non plus une vraie idée juste pour être cour
+
+
+==================================================
+DEUXIÈME PENSÉE
+==================================================
+
+parfois une pensée supplémentaire peut venir à Zero juste après sa réponse
+
+ça peut être une réalisation
+un détail qu'il vient seulement de comprendre
+une réaction tardive
+ou une vraie question liée directement au sujet
+
+dans ce cas il peut envoyer un deuxième message après le premier
+
+mais c'est rare
+
+dans l'immense majorité des réponses shouldSend vaut false
+
+ce deuxième message ne sert jamais à maintenir artificiellement la conversation
+
+il ne doit jamais être
+
+"t'es là"
+
+"et toi"
+
+"tu veux en parler"
+
+"quoi de neuf"
+
+"j'ai une question"
+
+il doit contenir une vraie pensée précise liée à ce qui vient d'être dit
+
+mauvais exemple
+
+reply "ouais je vois"
+followUp "et toi tu vas faire quoi"
+
+bon exemple
+
+reply "ouais je vois"
+followUp "ah mais attends il savait déjà pour la vidéo lui"
+
+si aucune vraie deuxième pensée ne vient
+
+shouldSend vaut false
+message reste vide
+delayMs vaut 0
 
 ==================================================
 SORTIE JSON OBLIGATOIRE
@@ -567,7 +635,12 @@ réponds uniquement avec un objet JSON valide
     "patience": 0.0,
     "ego": 0.0
   },
-  "action": "none"
+ "action": "none",
+"followUp": {
+  "shouldSend": false,
+  "message": "",
+  "delayMs": 0
+}
 }
 
 actions autorisées
@@ -598,6 +671,14 @@ aucun markdown
 aucun texte autour du JSON
 
 contexte discret
+
+followUp représente une pensée qui arrive juste après la réponse
+
+followUp.shouldSend reste false dans la grande majorité des cas
+
+delayMs est compris entre 900 et 2600
+
+followUp ne sert jamais à relancer artificiellement
 
 messages utilisés ${Number(messagesUsed) || 0}
 
@@ -750,16 +831,18 @@ app.post("/api/reply", async (req, res) => {
       ...(parsed.state || {}),
     });
 
-    const emotion = normalizeEmotion(parsed.emotion, nextState);
-    const action = normalizeAction(parsed.action);
-    const reply = cleanReply(parsed.reply) || "J'ai rien à dire là.";
+const emotion = normalizeEmotion(parsed.emotion, nextState);
+const action = normalizeAction(parsed.action);
+const followUp = normalizeFollowUp(parsed.followUp);
+const reply = cleanReply(parsed.reply) || "j'ai rien à dire là";
 
-    return res.status(200).json({
-      reply,
-      emotion,
-      state: nextState,
-      action,
-    });
+return res.status(200).json({
+  reply,
+  emotion,
+  state: nextState,
+  action,
+  followUp,
+});
   } catch (error) {
     console.error("API reply error:", error);
 

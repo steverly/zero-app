@@ -95,8 +95,19 @@ async function sendToBot(payload) {
       confidence: 0.78,
       surprise: 0,
     },
-    state: data?.state || null,
-    action: typeof data?.action === "string" ? data.action : "none",
+state: data?.state || null,
+action: typeof data?.action === "string" ? data.action : "none",
+followUp: {
+  shouldSend: data?.followUp?.shouldSend === true,
+  message:
+    typeof data?.followUp?.message === "string"
+      ? data.followUp.message.trim()
+      : "",
+  delayMs:
+    typeof data?.followUp?.delayMs === "number"
+      ? data.followUp.delayMs
+      : 1400,
+},
   };
 }
 
@@ -606,8 +617,10 @@ export default function App() {
 
   const [adCountInRow, setAdCountInRow] = useState(0);
 
-  const timeoutRef = useRef(null);
-  const sessionStartedAtRef = useRef(Date.now());
+const timeoutRef = useRef(null);
+const followUpTimeoutRef = useRef(null);
+const sessionStartedAtRef = useRef(Date.now());
+  
 
   const title = useMemo(() => "Zero", []);
   const MAX_ADS_IN_ROW = 3;
@@ -842,6 +855,36 @@ setReply(data.reply);
 setEmotion(data.emotion);
 if (data.state) setZeroState(data.state);
 setZeroAction(data.action || "none");
+
+if (
+  data.followUp?.shouldSend &&
+  data.followUp.message
+) {
+  if (followUpTimeoutRef.current) {
+    clearTimeout(followUpTimeoutRef.current);
+  }
+
+  followUpTimeoutRef.current = setTimeout(() => {
+    const followUpMessage = data.followUp.message;
+    const followUpTime = Date.now();
+
+    setReply(followUpMessage);
+    setMood("replying");
+
+    setConversationHistory((prev) => [
+      ...prev,
+      {
+        role: "assistant",
+        text: followUpMessage,
+        at: followUpTime,
+      },
+    ].slice(-MAX_MEMORY_MESSAGES));
+
+    setTimeout(() => {
+      setMood("idle");
+    }, 1600);
+  }, data.followUp.delayMs);
+}
 
 const e = data.emotion;
 
