@@ -12,7 +12,7 @@
 
   --mood-bg: #11100f;
   --mood-bg-2: #181614;
-  --mood-accent: #f6f2ea;
+  --mood-accent: #c8c2b8;
   --mood-glow: rgba(246, 242, 234, 0.08);
 
   --danger: #ff5b60;
@@ -305,121 +305,200 @@ button {
   pointer-events: none;
 }
 
-/* yeux */
+/* =========================================================
+   YEUX PROVISOIRES — doux, abstraits, jamais Herobrine
+   ========================================================= */
+
 .center-stage::before,
 .center-stage::after {
   content: "";
   position: absolute;
-  top: clamp(82px, 18vh, 170px);
-  width: clamp(54px, 8vw, 84px);
-  height: clamp(30px, 4.8vw, 50px);
-  border-radius: 52% 52% 48% 48% / 56% 56% 44% 44%;
-  background: var(--mood-accent);
+  top: clamp(92px, 19vh, 175px);
+
+  width: clamp(58px, 8vw, 82px);
+  height: clamp(13px, 2vw, 20px);
+
+  border-radius: 50% 50% 62% 62% / 38% 38% 72% 72%;
+
+  /*
+    L’œil n’est jamais blanc pur.
+    Il reprend la couleur de l’humeur avec très peu d’opacité.
+  */
+  background:
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--mood-accent) 12%, transparent),
+      color-mix(in srgb, var(--mood-accent) 58%, transparent)
+    );
+
+  opacity: 0.72;
+
   box-shadow:
-    0 0 34px color-mix(in srgb, var(--mood-accent) 22%, transparent),
-    inset 0 -4px 12px rgba(0, 0, 0, 0.08);
+    0 5px 14px rgba(0, 0, 0, 0.16),
+    0 0 18px color-mix(in srgb, var(--mood-accent) 10%, transparent),
+    inset 0 -3px 5px rgba(255, 255, 255, 0.035);
+
   transform-origin: center;
+
   transition:
-    top 0.65s cubic-bezier(0.2, 0.8, 0.2, 1),
-    width 0.65s cubic-bezier(0.2, 0.8, 0.2, 1),
-    height 0.65s cubic-bezier(0.2, 0.8, 0.2, 1),
-    border-radius 0.65s cubic-bezier(0.2, 0.8, 0.2, 1),
-    background 1.05s ease,
-    box-shadow 0.8s ease,
-    transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1),
-    opacity 0.45s ease;
-  animation: zero-eye-breathe 5.8s ease-in-out infinite;
+    top 0.7s cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 0.7s cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 0.7s cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-radius 0.7s cubic-bezier(0.2, 0.8, 0.2, 1),
+    background 1.1s ease,
+    opacity 0.7s ease,
+    box-shadow 1s ease,
+    transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  animation: zero-soft-blink 6.8s ease-in-out infinite;
 }
 
 .center-stage::before {
-  left: calc(50% - clamp(94px, 13vw, 138px));
+  left: calc(50% - clamp(92px, 13vw, 132px));
 }
 
 .center-stage::after {
-  right: calc(50% - clamp(94px, 13vw, 138px));
+  right: calc(50% - clamp(92px, 13vw, 132px));
   animation-delay: -0.08s;
 }
 
-@keyframes zero-eye-breathe {
+/*
+  Petit mouvement permanent.
+  Le clignement reste très discret.
+*/
+@keyframes zero-soft-blink {
   0%,
+  43%,
+  47%,
   100% {
     transform: translateY(0) scaleY(1);
   }
-  48% {
-    transform: translateY(-1px) scaleY(1.025);
+
+  45% {
+    transform: translateY(1px) scaleY(0.12);
   }
-  51% {
-    transform: translateY(0) scaleY(0.09);
-  }
-  55% {
-    transform: translateY(0) scaleY(1);
+
+  70% {
+    transform: translateY(-1px) scaleY(1.04);
   }
 }
 
-/* humeur des yeux */
+/* Réflexion : regard légèrement relevé et plus fin */
 .app.mood-thinking .center-stage::before,
 .app.mood-thinking .center-stage::after {
-  transform: translateY(-3px) scaleY(0.82) rotate(-2deg);
+  height: clamp(10px, 1.6vw, 15px);
+  opacity: 0.62;
+  transform: translateY(-5px) scaleY(0.82);
 }
 
+/* Chaleureux : courbes douces, presque un sourire */
 .app.mood-warm .center-stage::before,
-.app.mood-warm .center-stage::after,
+.app.mood-warm .center-stage::after {
+  height: clamp(11px, 1.8vw, 17px);
+
+  border-radius:
+    48% 48% 72% 72%
+    /
+    28% 28% 82% 82%;
+
+  opacity: 0.8;
+}
+
+/* Amusé : yeux plus fermés et plus courbés */
 .app.mood-funny .center-stage::before,
 .app.mood-funny .center-stage::after {
-  height: clamp(22px, 3.6vw, 36px);
-  border-radius: 50% 50% 60% 60% / 35% 35% 78% 78%;
+  height: clamp(8px, 1.35vw, 13px);
+
+  border-radius:
+    42% 42% 78% 78%
+    /
+    22% 22% 90% 90%;
+
+  opacity: 0.86;
+  transform: translateY(2px);
 }
 
+/* Enthousiaste : légèrement plus ouverts, jamais énormes */
+.app.mood-hyped .center-stage::before,
+.app.mood-hyped .center-stage::after {
+  width: clamp(62px, 8.7vw, 88px);
+  height: clamp(17px, 2.5vw, 25px);
+  opacity: 0.88;
+}
+
+/* Agacé : paupières inclinées */
 .app.mood-annoyed .center-stage::before {
-  transform: rotate(8deg) scaleY(0.6);
-  border-radius: 58% 44% 44% 56%;
+  height: clamp(9px, 1.5vw, 14px);
+  transform: rotate(7deg) translateY(2px);
+  opacity: 0.9;
 }
 
 .app.mood-annoyed .center-stage::after {
-  transform: rotate(-8deg) scaleY(0.6);
-  border-radius: 44% 58% 56% 44%;
+  height: clamp(9px, 1.5vw, 14px);
+  transform: rotate(-7deg) translateY(2px);
+  opacity: 0.9;
 }
 
+/* Tranchant : regard fin et fixe */
 .app.mood-sharp .center-stage::before,
 .app.mood-sharp .center-stage::after {
-  transform: scaleY(0.68);
+  height: clamp(7px, 1.2vw, 11px);
+  opacity: 0.94;
 }
 
-.app.mood-hyped .center-stage::before,
-.app.mood-hyped .center-stage::after {
-  width: clamp(60px, 8.8vw, 92px);
-  height: clamp(36px, 5.4vw, 58px);
-}
-
+/* Fixer l’utilisateur */
 .app[data-zero-action="stare"] .center-stage::before,
 .app[data-zero-action="stare"] .center-stage::after {
   animation-play-state: paused;
-  transform: scale(1.08);
+  height: clamp(16px, 2.4vw, 23px);
+  opacity: 0.9;
+  transform: scaleX(1.04);
 }
 
+/* Regarder sur le côté */
 .app[data-zero-action="lookAway"] .center-stage::before,
 .app[data-zero-action="lookAway"] .center-stage::after {
-  transform: translateX(10px) scaleY(0.9);
+  transform: translateX(9px) scaleY(0.82);
+  opacity: 0.58;
 }
 
+/* Soupir */
 .app[data-zero-action="sigh"] .center-stage::before,
 .app[data-zero-action="sigh"] .center-stage::after {
-  transform: translateY(6px) scaleY(0.62);
+  transform: translateY(7px) scaleY(0.52);
+  opacity: 0.48;
 }
 
+/* Surprise : plus ouverts mais toujours abstraits */
 .app[data-zero-action="surprised"] .center-stage::before,
 .app[data-zero-action="surprised"] .center-stage::after {
-  width: clamp(62px, 9vw, 94px);
-  height: clamp(40px, 6vw, 64px);
-  border-radius: 50%;
+  width: clamp(58px, 8vw, 82px);
+  height: clamp(25px, 3.8vw, 36px);
+
+  border-radius: 48%;
+
+  opacity: 0.9;
+
+  background:
+    radial-gradient(
+      ellipse at center,
+      color-mix(in srgb, var(--mood-accent) 42%, transparent) 0%,
+      color-mix(in srgb, var(--mood-accent) 18%, transparent) 55%,
+      transparent 78%
+    );
 }
 
+/* Refus : fermeture nette */
 .app[data-zero-action="refuse"] .center-stage::before {
-  transform: rotate(10deg) scaleY(0.55);
+  height: clamp(7px, 1.1vw, 10px);
+  transform: rotate(9deg);
+  opacity: 0.9;
 }
 
 .app[data-zero-action="refuse"] .center-stage::after {
-  transform: rotate(-10deg) scaleY(0.55);
+  height: clamp(7px, 1.1vw, 10px);
+  transform: rotate(-9deg);
+  opacity: 0.9;
 }
 
 .reply-shell {
