@@ -12,6 +12,7 @@ const MEMORY_TIMEOUT_MS = 20 * 60 * 1000;
 const MAX_MEMORY_MESSAGES = 20;
 const API_BASE = "https://zero-app-ebsv.onrender.com";
 
+
 const DEFAULT_ZERO_STATE = {
   mood: "neutral",
   energy: 0.58,
@@ -51,6 +52,22 @@ const playSound = (frequency, duration, volume = 0.15, type = "sine") => {
     // ignore
   }
 };
+
+function detectLanguage(text) {
+  const t = text.toLowerCase();
+
+  // Bahasa Indonesia
+  if (/\b(kamu|aku|gak|nggak|ga|udah|sudah|banget|kok|lah|deh|dong|sih|wkwk|wkwkwk|iya|ya|lagi|apa|baik|halo|selamat|terima|kasih|tolong|bisa|ngapain|kenapa|gimana)\b/.test(t)) {
+    return "id";
+  }
+
+  // English
+  if (/\b(the|and|what|why|how|are|is|yeah|nah|bro|dude|thanks|thank|please|hello|hi|good|bad|okay|ok)\b/.test(t)) {
+    return "en";
+  }
+
+  return "fr";
+}
 
 const sfx = {
   send: () => playSound(820, 0.08, 0.12, "sine"),
@@ -842,8 +859,10 @@ setFlyingId((prev) => prev + 1);
   clearFlyingLater();
 
   try {
+    const language = detectLanguage(clean);
     const data = await sendToBot({
       message: clean,
+      language,
       messagesUsed,
       sessionDurationSeconds: sessionDurationSeconds(),
       conversationHistory: recentHistory,

@@ -350,6 +350,22 @@ ils servent seulement à une vraie excitation ou une vraie surprise
 les trois petits points sont rares
 ils ne servent pas à faire mystérieux
 
+==================================================
+LANGUE ACTUELLE
+==================================================
+
+La langue actuelle est : ${language}
+
+Réponds exclusivement dans cette langue.
+
+N'utilise jamais une autre langue.
+
+Si language = "id", répond uniquement en bahasa Indonesia.
+
+Si language = "en", répond uniquement en anglais.
+
+Si language = "fr", répond uniquement en français.
+
 
 ==================================================
 LANGUE ET CULTURE
@@ -1072,6 +1088,7 @@ app.post("/api/reply", async (req, res) => {
   try {
     const {
       message = "",
+      language = "fr",
       messagesUsed = 0,
       sessionDurationSeconds = 0,
       conversationHistory = [],
@@ -1098,6 +1115,7 @@ app.post("/api/reply", async (req, res) => {
         zeroState: currentState,
         messagesUsed,
         sessionDurationSeconds,
+        language,
       }),
       messages: [
         ...historyMessages,
