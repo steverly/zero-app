@@ -4,12 +4,24 @@ import { initAdMob, showRewardedAd } from "./admob";
 import "./styles.css";
 import { Purchases } from '@revenuecat/purchases-capacitor';
 
-const MAX_CHARS = 120;
+const MAX_CHARS = 2000;
 const FREE_MESSAGES_START = 6;
 const REWARDED_MESSAGES_GAIN = 10;
 const MEMORY_TIMEOUT_MS = 20 * 60 * 1000;
-const MAX_MEMORY_MESSAGES = 8;
+const MAX_MEMORY_MESSAGES = 20;
 const API_BASE = "https://zero-app-ebsv.onrender.com";
+
+const DEFAULT_ZERO_STATE = {
+  mood: "neutral",
+  energy: 0.58,
+  warmth: 0.62,
+  amusement: 0.25,
+  annoyance: 0.04,
+  curiosity: 0.48,
+  trust: 0.22,
+  patience: 0.78,
+  ego: 0.82,
+};
 
 // --------------------
 // SFX
@@ -69,11 +81,22 @@ async function apiPost(path, body) {
 
 async function sendToBot(payload) {
   const data = await apiPost("/api/reply", payload);
+
   return {
     reply:
       typeof data?.reply === "string" && data.reply.trim()
         ? data.reply.trim()
-        : "Parle mieux. Là c’est flou.",
+        : "Là j’ai pas assez pour capter",
+    emotion: data?.emotion || {
+      energy: 0.55,
+      warmth: 0.55,
+      humor: 0.1,
+      annoyance: 0.05,
+      confidence: 0.78,
+      surprise: 0,
+    },
+    state: data?.state || null,
+    action: typeof data?.action === "string" ? data.action : "none",
   };
 }
 
@@ -117,7 +140,12 @@ function TypewriterText({ text, speed = 16 }) {
     return () => clearInterval(interval);
   }, [text, speed]);
 
-  return <span>{visible}</span>;
+ return (
+  <span className="typewriter-text">
+    {visible}
+    <span className="typewriter-cursor" />
+  </span>
+);
 }
 
 function LoaderDots() {
@@ -469,10 +497,80 @@ function PremiumModal({
   );
 }
 
+
+function getZeroMood(text) {
+  const t = String(text || "").toLowerCase();
+
+  if (!t.trim()) return "idle";
+
+  if (
+    t.includes("faux") ||
+    t.includes("non") ||
+    t.includes("bancal") ||
+    t.includes("aucun sens") ||
+    t.includes("mauvais") ||
+    t.includes("c’est mort") ||
+    t.includes("ça pue") ||
+    t.includes("éclaté")
+  ) {
+    return "sharp";
+  }
+
+  if (
+    t.includes("mdr") ||
+    t.includes("😭") ||
+    t.includes("😂") ||
+    t.includes("t’abuses") ||
+    t.includes("tu forces")
+  ) {
+    return "funny";
+  }
+
+  if (
+    t.includes("propre") ||
+    t.includes("bien") ||
+    t.includes("grave") ||
+    t.includes("bonne idée") ||
+    t.includes("là oui")
+  ) {
+    return "warm";
+  }
+
+  if (
+    t.includes("ça dépend") ||
+    t.includes("possible") ||
+    t.includes("peut-être") ||
+    t.includes("pas sûr")
+  ) {
+    return "calm";
+  }
+
+  return "replying";
+}
+
+
 export default function App() {
   const [input, setInput] = useState("");
   const [reply, setReply] = useState("");
   const [loading, setLoading] = useState(false);
+  const [mood, setMood] = useState("idle");
+  const [emotion, setEmotion] = useState({
+    energy: 0.55,
+    warmth: 0.55,
+    humor: 0.1,
+    annoyance: 0.05,
+    confidence: 0.78,
+    surprise: 0,
+  });
+  const [zeroState, setZeroState] = useState(() => {
+    try {
+      const saved = localStorage.getItem("zero_emotional_state");
+      return saved ? { ...DEFAULT_ZERO_STATE, ...JSON.parse(saved) } : DEFAULT_ZERO_STATE;
+    } catch {
+      return DEFAULT_ZERO_STATE;
+    }
+  });
+  const [zeroAction, setZeroAction] = useState("none");
 
   const [messagesLeft, setMessagesLeft] = useState(FREE_MESSAGES_START);
   const [isPremium, setIsPremium] = useState(false);
@@ -516,6 +614,14 @@ export default function App() {
 
 
   
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("zero_emotional_state", JSON.stringify(zeroState));
+    } catch {
+      // ignore
+    }
+  }, [zeroState]);
 
   useEffect(() => {
     try {
@@ -695,6 +801,7 @@ const handleRewardedAd = async () => {
 
 if (!isPremium && messagesLeft <= 0) {
   setLoading(true);
+  setMood("thinking");
 
   setTimeout(() => {
     setLoading(false);
@@ -709,12 +816,14 @@ if (!isPremium && messagesLeft <= 0) {
     .filter((item) => now - item.at < MEMORY_TIMEOUT_MS)
     .slice(-MAX_MEMORY_MESSAGES);
 
-  setError("");
-  setInput("");
-  setReply("");
-  setLoading(true);
+ setError("");
+setInput("");
+setReply("");
 
-  setFlyingId((prev) => prev + 1);
+setLoading(true);
+setMood("thinking");
+
+setFlyingId((prev) => prev + 1);
   setFlyingMessage(clean);
   clearFlyingLater();
 
@@ -724,9 +833,32 @@ if (!isPremium && messagesLeft <= 0) {
       messagesUsed,
       sessionDurationSeconds: sessionDurationSeconds(),
       conversationHistory: recentHistory,
+      zeroState,
     });
 
-    setReply(data.reply);
+   const nextMood = getZeroMood(data.reply);
+
+setReply(data.reply);
+setEmotion(data.emotion);
+if (data.state) setZeroState(data.state);
+setZeroAction(data.action || "none");
+
+const e = data.emotion;
+
+if (data.action === "refuse") setMood("annoyed");
+else if (data.action === "laugh") setMood("funny");
+else if (data.action === "excited") setMood("hyped");
+else if (data.action === "soften") setMood("warm");
+else if (e.annoyance > 0.65) setMood("annoyed");
+else if (e.humor > 0.55) setMood("funny");
+else if (e.warmth > 0.6) setMood("warm");
+else if (e.energy > 0.7) setMood("hyped");
+else if (e.confidence > 0.75) setMood("sharp");
+else setMood("replying");
+
+setTimeout(() => {
+  setMood("idle");
+}, 1600);
   if (!isPremium) {
   setMessagesLeft((prev) => Math.max(0, prev - 1));
 }
@@ -747,12 +879,17 @@ if (!isPremium && messagesLeft <= 0) {
     if ((messagesUsed + 1) % 4 === 0) {
       setAdCountInRow(0);
     }
-  } catch (err) {
-    setReply("");
-    setError(err?.message || "Ça a planté.");
-  } finally {
-    setLoading(false);
-  }
+ } catch (err) {
+  setReply("");
+  setError(err?.message || "Ça a planté.");
+  setMood("error");
+
+  setTimeout(() => {
+    setMood("idle");
+  }, 1200);
+} finally {
+  setLoading(false);
+}
 };
 
 
@@ -811,7 +948,18 @@ if (!appReady) {
   );
 } 
   return (
-    <div className="app">
+ <div
+  className={`app mood-${mood}`}
+  style={{
+    "--zero-energy": emotion.energy,
+    "--zero-warmth": emotion.warmth,
+    "--zero-humor": emotion.humor,
+    "--zero-annoyance": emotion.annoyance,
+    "--zero-confidence": emotion.confidence,
+    "--zero-surprise": emotion.surprise || 0,
+  }}
+  data-zero-action={zeroAction}
+>
       <div className="bg-gradient" />
       <div className="bg-glow bg-glow-1" />
       <div className="bg-glow bg-glow-2" />

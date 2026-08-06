@@ -1,16 +1,18 @@
 :root {
-  --bg: #0a0a12;
-  --bg-secondary: #12121a;
-  --panel: rgba(255, 255, 255, 0.04);
-  --panel-strong: rgba(255, 255, 255, 0.08);
-  --border: rgba(255, 255, 255, 0.08);
-  --text: #f0f0f4;
-  --muted: rgba(240, 240, 244, 0.5);
-  --accent: #9b87f5;
-  --accent-2: #7e69d6;
-  --accent-glow: rgba(155, 135, 245, 0.3);
-  --danger: #ff6b6b;
-  --warning: #ffa94d;
+  --bg: #0b0709;
+  --bg-secondary: #151013;
+  --panel: rgba(255, 255, 255, 0.045);
+  --panel-strong: rgba(255, 255, 255, 0.09);
+  --border: rgba(255, 255, 255, 0.09);
+  --text: #f5eeee;
+  --muted: rgba(245, 238, 238, 0.52);
+
+  --accent: #ff3b4f;
+  --accent-2: #b3132b;
+  --accent-glow: rgba(255, 59, 79, 0.28);
+
+  --danger: #ff4d4d;
+  --warning: #ff9f43;
 }
 
 * {
@@ -70,6 +72,35 @@ textarea {
   z-index: 0;
 }
 
+
+.app {
+  transition: filter 0.4s ease;
+}
+
+.app.mood-thinking .bg-glow-1 {
+  transform: scale(1.12);
+  opacity: 0.95;
+}
+
+.app.mood-replying .bg-glow-2 {
+  transform: scale(1.16);
+  opacity: 1;
+}
+
+.app.mood-error .bg-glow-3 {
+  transform: translate(-50%, -50%) scale(1.25);
+  opacity: 1;
+}
+
+.app.mood-thinking .reply-shell {
+  transform: scale(0.995);
+  opacity: 0.92;
+}
+
+.app.mood-replying .reply-shell {
+  transform: scale(1.018);
+}
+
 .bg-glow {
   position: absolute;
   border-radius: 50%;
@@ -80,31 +111,31 @@ textarea {
 }
 
 .bg-glow-1 {
-  width: 320px;
-  height: 320px;
-  background: radial-gradient(circle, rgba(155, 135, 245, 0.25), transparent 70%);
-  top: -100px;
-  left: -80px;
-  animation: float-1 20s ease-in-out infinite;
+  width: 340px;
+  height: 340px;
+  background: radial-gradient(circle, rgba(255, 59, 79, 0.22), transparent 70%);
+  top: -110px;
+  left: -90px;
+  animation: float-1 16s ease-in-out infinite;
 }
 
 .bg-glow-2 {
-  width: 280px;
-  height: 280px;
-  background: radial-gradient(circle, rgba(126, 105, 214, 0.2), transparent 70%);
-  right: -60px;
-  bottom: 80px;
-  animation: float-2 18s ease-in-out infinite;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(circle, rgba(179, 19, 43, 0.24), transparent 70%);
+  right: -70px;
+  bottom: 70px;
+  animation: float-2 14s ease-in-out infinite;
 }
 
 .bg-glow-3 {
-  width: 240px;
-  height: 240px;
-  background: radial-gradient(circle, rgba(155, 135, 245, 0.15), transparent 70%);
+  width: 260px;
+  height: 260px;
+  background: radial-gradient(circle, rgba(255, 80, 80, 0.14), transparent 70%);
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  animation: pulse-glow 8s ease-in-out infinite;
+  animation: pulse-glow 6s ease-in-out infinite;
 }
 
 @keyframes float-1 {
@@ -724,4 +755,310 @@ textarea {
   to {
     transform: rotate(360deg);
   }
+}
+
+
+.reply-shell {
+  animation: zero-breath 5.5s ease-in-out infinite;
+  will-change: transform, opacity, filter;
+}
+
+@keyframes zero-breath {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+  }
+
+  50% {
+    transform: translateY(-2px) scale(1.003);
+  }
+}
+
+.app.mood-thinking .bg-glow {
+  animation-duration: 4s;
+}
+
+.app.mood-thinking .reply-shell {
+  opacity: 0.9;
+  transform: scale(0.995);
+}
+
+.app.mood-replying .reply-text {
+  text-shadow:
+    0 0 24px rgba(255, 59, 79, 0.38),
+    0 2px 20px rgba(255, 59, 79, 0.18);
+}
+
+.app.mood-sharp .bg-glow-1 {
+  opacity: 1;
+  transform: scale(1.18);
+}
+
+.app.mood-sharp .reply-text {
+  animation: zero-sharp-hit 0.28s ease-out;
+  text-shadow:
+    0 0 28px rgba(255, 59, 79, 0.52),
+    0 2px 20px rgba(255, 59, 79, 0.2);
+}
+
+@keyframes zero-sharp-hit {
+  0% {
+    transform: translateX(0);
+  }
+
+  30% {
+    transform: translateX(-3px);
+  }
+
+  60% {
+    transform: translateX(3px);
+  }
+
+  100% {
+    transform: translateX(0);
+  }
+}
+
+.app.mood-funny .reply-shell {
+  animation: zero-funny-pop 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes zero-funny-pop {
+  0% {
+    transform: scale(0.96) rotate(-0.4deg);
+  }
+
+  60% {
+    transform: scale(1.018) rotate(0.4deg);
+  }
+
+  100% {
+    transform: scale(1) rotate(0);
+  }
+}
+
+.app.mood-warm .bg-glow-2 {
+  opacity: 0.95;
+  transform: scale(1.14);
+}
+
+.app.mood-warm .reply-text {
+  text-shadow:
+    0 0 22px rgba(255, 120, 120, 0.34),
+    0 2px 18px rgba(255, 59, 79, 0.14);
+}
+
+.app.mood-calm .bg-glow {
+  opacity: 0.45;
+}
+
+.app.mood-calm .reply-shell {
+  animation-duration: 7s;
+}
+
+.app.mood-error .reply-text {
+  color: #ffb3b3;
+  animation: zero-error-pulse 0.5s ease-out;
+}
+
+@keyframes zero-error-pulse {
+  0% {
+    filter: blur(2px);
+    opacity: 0.7;
+  }
+
+  100% {
+    filter: blur(0);
+    opacity: 1;
+  }
+}
+
+.typewriter-text {
+  display: inline;
+}
+
+.typewriter-cursor {
+  display: inline-block;
+  width: 0.46em;
+  height: 0.08em;
+  margin-left: 0.12em;
+  transform: translateY(-0.1em);
+  background: var(--accent);
+  box-shadow: 0 0 14px var(--accent-glow);
+  animation: cursor-blink 0.85s steps(2, start) infinite;
+}
+
+@keyframes cursor-blink {
+  0%, 45% {
+    opacity: 1;
+  }
+
+  46%, 100% {
+    opacity: 0;
+  }
+}
+
+.loader-dots span {
+  animation:
+    pulse-dot 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite,
+    loader-heat 2.4s ease-in-out infinite;
+}
+
+@keyframes loader-heat {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(255, 59, 79, 0.22);
+  }
+
+  50% {
+    box-shadow: 0 0 22px rgba(255, 59, 79, 0.5);
+  }
+}
+
+.send-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow:
+    0 10px 30px rgba(255, 59, 79, 0.34),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.app {
+  --red-soft: rgba(255, 70, 85, 0.22);
+  --red-hard: rgba(255, 20, 45, 0.42);
+  --warm-soft: rgba(255, 120, 80, 0.32);
+  --dark-red: rgba(120, 0, 20, 0.45);
+}
+
+.bg-glow {
+  transition:
+    opacity 0.45s ease,
+    transform 0.45s ease,
+    filter 0.45s ease;
+}
+
+.reply-text {
+  transition:
+    color 0.35s ease,
+    text-shadow 0.35s ease,
+    transform 0.25s ease;
+}
+
+.app.mood-thinking .bg-glow {
+  opacity: calc(0.45 + var(--zero-energy) * 0.45);
+  filter: blur(calc(70px - var(--zero-energy) * 18px));
+}
+
+.app.mood-replying .reply-text {
+  text-shadow:
+    0 0 calc(12px + var(--zero-energy) * 26px) rgba(255, 60, 80, 0.35),
+    0 2px 20px rgba(255, 60, 80, 0.16);
+}
+
+.app.mood-warm .bg-glow-2 {
+  opacity: calc(0.55 + var(--zero-warmth) * 0.45);
+  background: radial-gradient(circle, var(--warm-soft), transparent 70%);
+  transform: scale(calc(1 + var(--zero-warmth) * 0.16));
+}
+
+.app.mood-warm .reply-text {
+  text-shadow:
+    0 0 24px rgba(255, 125, 90, 0.45),
+    0 2px 18px rgba(255, 70, 85, 0.18);
+}
+
+.app.mood-funny .reply-shell {
+  animation: zero-laugh 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes zero-laugh {
+  0% { transform: scale(0.96) rotate(-0.6deg); }
+  45% { transform: scale(1.025) rotate(0.6deg); }
+  100% { transform: scale(1) rotate(0); }
+}
+
+.app.mood-annoyed .bg-gradient {
+  background: radial-gradient(
+    ellipse at top center,
+    rgba(255, 20, 45, 0.16) 0%,
+    rgba(120, 0, 20, 0.12) 32%,
+    var(--bg) 68%
+  );
+}
+
+.app.mood-annoyed .reply-text {
+  animation: zero-annoyed-hit 0.22s ease-out;
+  text-shadow:
+    0 0 30px rgba(255, 35, 55, 0.62),
+    0 2px 20px rgba(255, 35, 55, 0.22);
+}
+
+@keyframes zero-annoyed-hit {
+  0% { transform: translateX(0); }
+  30% { transform: translateX(-4px); }
+  60% { transform: translateX(3px); }
+  100% { transform: translateX(0); }
+}
+
+.app.mood-sharp .bg-glow-1 {
+  opacity: 1;
+  transform: scale(calc(1.05 + var(--zero-confidence) * 0.16));
+}
+
+.app.mood-sharp .reply-text {
+  text-shadow:
+    0 0 26px rgba(255, 50, 70, 0.55),
+    0 2px 18px rgba(255, 50, 70, 0.2);
+}
+
+.app.mood-hyped .bg-glow {
+  opacity: 0.95;
+  filter: blur(62px);
+}
+
+.app.mood-hyped .reply-shell {
+  animation: zero-hyped-pulse 0.55s ease-out;
+}
+
+@keyframes zero-hyped-pulse {
+  0% { transform: scale(0.97); }
+  55% { transform: scale(1.025); }
+  100% { transform: scale(1); }
+}
+
+.app.mood-error .bg-gradient {
+  background: radial-gradient(
+    ellipse at top center,
+    rgba(255, 0, 40, 0.22) 0%,
+    rgba(80, 0, 20, 0.16) 35%,
+    var(--bg) 70%
+  );
+}
+
+.typewriter-cursor {
+  background: var(--accent);
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+/* Zero Character V2 — états utilisables par les futurs yeux animés */
+.app[data-zero-action="stare"] .reply-text { transform: scale(1.025); }
+.app[data-zero-action="look_away"] .reply-text { transform: translateX(5px); opacity: .88; }
+.app[data-zero-action="sigh"] .reply-shell { animation: zero-sigh .8s ease-out; }
+.app[data-zero-action="laugh"] .reply-shell { animation: zero-laugh .55s ease-out; }
+.app[data-zero-action="surprised"] .reply-shell { animation: zero-surprise .32s ease-out; }
+.app[data-zero-action="refuse"] .reply-text { letter-spacing: -.03em; }
+.app[data-zero-action="soften"] .reply-text { text-shadow: 0 0 26px rgba(255,120,120,.3); }
+
+@keyframes zero-sigh {
+  0% { transform: translateY(0); }
+  45% { transform: translateY(7px) scale(.99); }
+  100% { transform: translateY(0); }
+}
+
+@keyframes zero-laugh {
+  0%,100% { transform: translateY(0) rotate(0); }
+  30% { transform: translateY(-5px) rotate(-.7deg); }
+  65% { transform: translateY(-2px) rotate(.7deg); }
+}
+
+@keyframes zero-surprise {
+  0% { transform: scale(.94); opacity: .65; }
+  70% { transform: scale(1.04); opacity: 1; }
+  100% { transform: scale(1); }
 }
