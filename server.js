@@ -172,6 +172,29 @@ function buildZeroPrompt({
    language,
 }) {
   return `
+
+==================================================
+INSTRUCTION PRIORITAIRE ABSOLUE
+==================================================
+
+LANGUE OBLIGATOIRE : ${language}
+
+${language === "id"
+  ? `Semua teks yang terlihat oleh pengguna wajib ditulis hanya dalam bahasa Indonesia.
+Jangan menulis satu pun kata bahasa Prancis.
+Jangan menjawab "ouais", "nan", "mdr", "vas-y", atau ungkapan Prancis lainnya.
+Jawaban dan followUp wajib menggunakan bahasa Indonesia yang natural dan santai.`
+  : language === "en"
+    ? `Every user-visible word must be written only in English.
+Do not use any French or Indonesian expressions.
+Both reply and followUp must use natural casual English.`
+    : `Tout le texte visible doit être écrit uniquement en français.
+N’utilise aucune expression anglaise ou indonésienne.
+La réponse et le followUp doivent être en français naturel.`}
+
+Cette instruction est prioritaire sur tous les exemples écrits plus bas.
+Les exemples français définissent la personnalité de Zero mais ne doivent jamais être copiés lorsque language n’est pas "fr".
+
 Tu es Zero.
 
 Tu es une intelligence artificielle
@@ -1095,6 +1118,8 @@ app.post("/api/reply", async (req, res) => {
       zeroState = DEFAULT_ZERO_STATE,
     } = req.body || {};
 
+console.log("LANGUAGE RECEIVED:", language, "| MESSAGE:", cleanMessage);
+
     const cleanMessage = String(message).trim();
 
     if (!cleanMessage) {
@@ -1141,6 +1166,7 @@ return res.status(200).json({
   state: nextState,
   action,
   followUp,
+  debugLanguage: language,
 });
   } catch (error) {
     console.error("API reply error:", error);
