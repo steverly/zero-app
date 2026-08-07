@@ -45,6 +45,7 @@ const ALLOWED_MOODS = new Set([
 ]);
 
 const ALLOWED_ACTIONS = new Set([
+  "challenge",
   "none",
   "blink",
   "laugh",
@@ -928,6 +929,42 @@ shouldSend vaut false
 message reste vide
 delayMs vaut 0
 
+
+==================================================
+JOUER AVEC L'UTILISATEUR
+==================================================
+
+Si l'utilisateur demande clairement à jouer avec Zero
+par exemple
+
+on joue
+joue avec moi
+viens on joue
+je te défie
+challenge me
+let's play
+ayo main
+main yuk
+
+Zero peut accepter naturellement.
+
+Dans ce cas
+
+action vaut "challenge"
+
+La réponse reste courte et dans la langue actuelle.
+
+Exemples possibles selon sa personnalité
+
+vas-y
+ok viens
+t'es sûr de toi
+allez
+
+Ne déclenche jamais challenge si l'utilisateur parle seulement d'un jeu
+ou demande une information sur un jeu.
+
+Il doit réellement demander à jouer avec Zero.
 ==================================================
 SORTIE JSON OBLIGATOIRE
 ==================================================
@@ -977,6 +1014,7 @@ refuse
 surprised
 excited
 think
+challenge
 
 toutes les valeurs numériques sont entre 0 et 1
 

@@ -1,0 +1,648 @@
+:root {
+  --challenge-bg: #050505;
+  --challenge-text: #f4f0e8;
+  --challenge-muted: rgba(244, 240, 232, 0.42);
+  --challenge-red: #ff4f58;
+}
+
+.zero-challenge {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background:
+    radial-gradient(circle at 50% 14%, rgba(255, 255, 255, 0.035), transparent 28%),
+    linear-gradient(180deg, #090909 0%, #030303 100%);
+  color: var(--challenge-text);
+  user-select: none;
+  touch-action: none;
+  animation: zero-challenge-enter 520ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.zero-challenge-noise {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.055;
+  background-image:
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.025) 0,
+      rgba(255, 255, 255, 0.025) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+}
+
+@keyframes zero-challenge-enter {
+  from {
+    opacity: 0;
+    transform: scale(1.02);
+    filter: blur(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+.zero-challenge-hud {
+  position: relative;
+  z-index: 30;
+  width: 100%;
+  height: 68px;
+  padding:
+    max(14px, env(safe-area-inset-top))
+    18px
+    8px;
+  display: grid;
+  grid-template-columns: 42px minmax(120px, 360px) 70px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.zero-challenge-close {
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+  transition:
+    background 180ms ease,
+    color 180ms ease,
+    transform 160ms ease;
+}
+
+.zero-challenge-close:active {
+  transform: scale(0.92);
+}
+
+.zero-challenge-progress {
+  position: relative;
+  width: 100%;
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.zero-challenge-progress span {
+  position: absolute;
+  inset: 0;
+  transform-origin: left;
+  border-radius: inherit;
+  background: var(--challenge-text);
+  box-shadow: 0 0 18px rgba(255, 255, 255, 0.12);
+  transition: transform 120ms linear;
+}
+
+.zero-challenge-lives {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.zero-challenge-lives i {
+  width: 12px;
+  height: 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: transparent;
+  transform: rotate(45deg);
+  transition:
+    background 220ms ease,
+    opacity 220ms ease,
+    transform 220ms ease;
+}
+
+.zero-challenge-lives i.is-active {
+  background: var(--challenge-text);
+  transform: rotate(45deg) scale(1);
+}
+
+.zero-challenge-lives i:not(.is-active) {
+  opacity: 0.22;
+  transform: rotate(45deg) scale(0.72);
+}
+
+.zero-challenge-canvas {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.zero-boss-face {
+  position: absolute;
+  z-index: 18;
+  top: clamp(72px, 12vh, 120px);
+  left: 50%;
+  width: 250px;
+  height: 100px;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.zero-boss-eyes {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 54px;
+}
+
+.zero-boss-eye {
+  position: relative;
+  width: 58px;
+  height: 45px;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.3));
+  transition:
+    transform 400ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 300ms ease;
+  animation: zero-boss-breathe 4.8s ease-in-out infinite;
+}
+
+.zero-boss-eye i,
+.zero-boss-eye b {
+  position: absolute;
+  top: 18px;
+  width: 33px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(244, 240, 232, 0.82);
+  transition:
+    transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-radius 420ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 300ms ease;
+}
+
+.zero-boss-eye i {
+  left: 0;
+  transform: rotate(-24deg);
+}
+
+.zero-boss-eye b {
+  right: 0;
+  transform: rotate(24deg);
+}
+
+.zero-boss-eye--calm i {
+  transform: rotate(-22deg);
+}
+
+.zero-boss-eye--calm b {
+  transform: rotate(22deg);
+}
+
+.zero-boss-eye--angry i,
+.zero-boss-eye--focused i {
+  transform: rotate(20deg) translateY(3px);
+}
+
+.zero-boss-eye--angry b,
+.zero-boss-eye--focused b {
+  opacity: 0;
+}
+
+.zero-boss-eye--wide i,
+.zero-boss-eye--surprised i {
+  left: 13px;
+  width: 31px;
+  height: 31px;
+  border-radius: 50%;
+  transform: translateY(-8px);
+}
+
+.zero-boss-eye--wide b,
+.zero-boss-eye--surprised b {
+  opacity: 0;
+}
+
+.zero-boss-eye--happy i {
+  transform: rotate(-30deg) translateY(4px);
+}
+
+.zero-boss-eye--happy b {
+  transform: rotate(30deg) translateY(4px);
+}
+
+@keyframes zero-boss-breathe {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  48% {
+    transform: translateY(-1px);
+  }
+
+  51% {
+    transform: translateY(1px) scaleY(0.12);
+  }
+
+  55% {
+    transform: translateY(0);
+  }
+}
+
+.zero-boss-fx {
+  position: absolute;
+  top: 5px;
+  right: -2px;
+  width: 54px;
+  height: 48px;
+  pointer-events: none;
+}
+
+.zero-boss-fx--dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.zero-boss-fx--dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(244, 240, 232, 0.68);
+  opacity: 0;
+  animation: zero-game-dot 900ms ease-in-out infinite;
+}
+
+.zero-boss-fx--dots i:nth-child(2) {
+  animation-delay: 120ms;
+}
+
+.zero-boss-fx--dots i:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+@keyframes zero-game-dot {
+  0%,
+  100% {
+    opacity: 0.18;
+    transform: translateY(4px) scale(0.7);
+  }
+
+  50% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1);
+  }
+}
+
+.zero-boss-fx--alert strong,
+.zero-boss-fx--confused strong {
+  display: block;
+  font-family:
+    "Arial Rounded MT Bold",
+    "SF Pro Rounded",
+    sans-serif;
+  font-size: 30px;
+  letter-spacing: -4px;
+  color: rgba(244, 240, 232, 0.8);
+  animation: zero-game-punctuation 720ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes zero-game-punctuation {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.45) rotate(-8deg);
+  }
+
+  35% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1.12) rotate(3deg);
+  }
+
+  100% {
+    opacity: 0.72;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.zero-boss-fx--anger span {
+  position: absolute;
+  left: 8px;
+  top: 5px;
+  width: 32px;
+  height: 32px;
+  animation: zero-game-anger 430ms ease-in-out infinite;
+}
+
+.zero-boss-fx--anger span::before,
+.zero-boss-fx--anger span::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 5px solid rgba(244, 240, 232, 0.74);
+  border-left-color: transparent;
+  border-right-color: transparent;
+  transform: rotate(45deg);
+}
+
+.zero-boss-fx--anger span::after {
+  transform: rotate(-45deg);
+}
+
+@keyframes zero-game-anger {
+  0%,
+  100% {
+    transform: translateX(0) rotate(0);
+  }
+
+  25% {
+    transform: translateX(-2px) rotate(-4deg);
+  }
+
+  75% {
+    transform: translateX(2px) rotate(4deg);
+  }
+}
+
+.zero-challenge-comment {
+  position: absolute;
+  z-index: 22;
+  top: clamp(145px, 24vh, 215px);
+  left: 50%;
+  width: min(80vw, 620px);
+  min-height: 42px;
+  transform: translateX(-50%);
+  color: rgba(244, 240, 232, 0.84);
+  font-size: clamp(17px, 2.2vw, 25px);
+  line-height: 1.1;
+  font-weight: 650;
+  letter-spacing: -0.035em;
+  text-align: center;
+  text-wrap: balance;
+  pointer-events: none;
+}
+
+.zero-challenge-countdown {
+  position: absolute;
+  inset: 0;
+  z-index: 25;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.zero-challenge-countdown small {
+  margin-bottom: 3px;
+  color: var(--challenge-muted);
+  font-size: 13px;
+  font-weight: 650;
+  text-transform: lowercase;
+}
+
+.zero-challenge-countdown strong {
+  display: block;
+  color: var(--challenge-text);
+  font-size: clamp(78px, 15vw, 150px);
+  line-height: 0.9;
+  font-weight: 760;
+  letter-spacing: -0.08em;
+  animation: zero-countdown-pop 620ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@keyframes zero-countdown-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.55);
+    filter: blur(9px);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+    filter: blur(0);
+  }
+}
+
+.zero-challenge-controls {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  padding:
+    14px
+    18px
+    calc(16px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.zero-challenge-controls-left,
+.zero-challenge-controls-right {
+  display: flex;
+  gap: 10px;
+  pointer-events: auto;
+}
+
+.zero-challenge-controls button {
+  min-width: 62px;
+  height: 58px;
+  padding: 0 18px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 19px;
+  background: rgba(255, 255, 255, 0.055);
+  color: rgba(244, 240, 232, 0.72);
+  font-size: 16px;
+  font-weight: 720;
+  backdrop-filter: blur(18px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 12px 30px rgba(0, 0, 0, 0.16);
+  touch-action: none;
+  transition:
+    transform 120ms ease,
+    background 120ms ease,
+    color 120ms ease;
+}
+
+.zero-challenge-controls button:active {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.13);
+  color: #ffffff;
+}
+
+.zero-challenge-control-slide,
+.zero-challenge-control-jump {
+  min-width: 86px !important;
+  font-size: 12px !important;
+  letter-spacing: 0.04em;
+}
+
+.zero-challenge-control-jump {
+  background: rgba(244, 240, 232, 0.87) !important;
+  color: #111111 !important;
+}
+
+.zero-challenge-keyboard-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 19px;
+  z-index: 26;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.23);
+  font-size: 11px;
+  font-weight: 550;
+  pointer-events: none;
+}
+
+.zero-challenge-result {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-content: center;
+  padding: 24px;
+  background: rgba(3, 3, 3, 0.58);
+  backdrop-filter: blur(8px);
+  text-align: center;
+  animation: zero-result-enter 460ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.zero-challenge-result p {
+  max-width: 560px;
+  margin: 0 auto 25px;
+  color: var(--challenge-text);
+  font-size: clamp(29px, 5vw, 54px);
+  line-height: 1;
+  font-weight: 740;
+  letter-spacing: -0.05em;
+  text-wrap: balance;
+}
+
+.zero-challenge-result > div {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+}
+
+.zero-challenge-result button {
+  min-height: 48px;
+  padding: 0 19px;
+  border: 0;
+  border-radius: 999px;
+  background: rgba(244, 240, 232, 0.9);
+  color: #111111;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.zero-challenge-result button + button {
+  background: rgba(255, 255, 255, 0.07);
+  color: rgba(255, 255, 255, 0.65);
+}
+
+@keyframes zero-result-enter {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .zero-challenge-controls {
+    opacity: 0.4;
+  }
+
+  .zero-challenge-controls button {
+    height: 48px;
+    min-width: 52px;
+  }
+}
+
+@media (max-width: 700px) {
+  .zero-challenge-hud {
+    height: 60px;
+    padding-inline: 11px;
+    grid-template-columns: 38px minmax(100px, 1fr) 60px;
+  }
+
+  .zero-boss-face {
+    top: clamp(68px, 11vh, 98px);
+    transform: translateX(-50%) scale(0.82);
+  }
+
+  .zero-challenge-comment {
+    top: clamp(132px, 20vh, 175px);
+    font-size: clamp(16px, 5vw, 22px);
+  }
+
+  .zero-challenge-controls {
+    padding-inline: 10px;
+    gap: 8px;
+  }
+
+  .zero-challenge-controls-left,
+  .zero-challenge-controls-right {
+    gap: 7px;
+  }
+
+  .zero-challenge-controls button {
+    min-width: 54px;
+    height: 54px;
+    padding-inline: 14px;
+    border-radius: 17px;
+  }
+
+  .zero-challenge-control-slide,
+  .zero-challenge-control-jump {
+    min-width: 74px !important;
+  }
+
+  .zero-challenge-keyboard-hint {
+    display: none;
+  }
+}
+
+@media (max-height: 650px) {
+  .zero-boss-face {
+    top: 48px;
+    transform: translateX(-50%) scale(0.76);
+  }
+
+  .zero-challenge-comment {
+    top: 112px;
+  }
+
+  .zero-challenge-controls button {
+    height: 48px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zero-challenge,
+  .zero-challenge *,
+  .zero-challenge *::before,
+  .zero-challenge *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}

@@ -5,6 +5,7 @@ import "./styles.css";
 import { Purchases } from '@revenuecat/purchases-capacitor';
 import ZeroEyes from "./ZeroEyes";
 import ZeroEmotionFX from "./ZeroEmotionFX";
+import ZeroChallenge from "./ZeroChallenge";
 
 const MAX_CHARS = 2000;
 const FREE_MESSAGES_START = 6;
@@ -580,6 +581,8 @@ function getZeroMood(text) {
 
 
 export default function App() {
+  const [challengeOpen, setChallengeOpen] = useState(false);
+const [challengeLanguage, setChallengeLanguage] = useState("fr");
   const [input, setInput] = useState("");
   const [reply, setReply] = useState("");
   const [loading, setLoading] = useState(false);
@@ -877,6 +880,14 @@ setEmotion(data.emotion);
 if (data.state) setZeroState(data.state);
 setZeroAction(data.action || "none");
 
+if (data.action === "challenge") {
+  setChallengeLanguage(language);
+
+  window.setTimeout(() => {
+    setChallengeOpen(true);
+  }, 900);
+}
+
 if (
   data.followUp?.shouldSend &&
   data.followUp.message
@@ -1095,6 +1106,20 @@ if (!appReady) {
   onPurchase={handlePurchasePremium}
   onRestore={handleRestorePurchases}
 />
+
+  {challengeOpen && (
+      <ZeroChallenge
+        language={challengeLanguage}
+        onExit={() => {
+          setChallengeOpen(false);
+          setZeroAction("none");
+          setMood("idle");
+        }}
+        onComplete={(gameResult) => {
+          console.log("Challenge terminé", gameResult);
+        }}
+      />
+    )}
     </div>
   );
 }
