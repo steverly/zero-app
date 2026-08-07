@@ -4,6 +4,7 @@ import { initAdMob, showRewardedAd } from "./admob";
 import "./styles.css";
 import { Purchases } from '@revenuecat/purchases-capacitor';
 import ZeroEyes from "./ZeroEyes";
+import ZeroEmotionFX from "./ZeroEmotionFX";
 
 const MAX_CHARS = 2000;
 const FREE_MESSAGES_START = 6;
@@ -1053,6 +1054,11 @@ if (!appReady) {
       <main className="main-area">
   <InteractiveBackground />
   <ZeroEyes mood={mood} action={zeroAction} />
+  <ZeroEmotionFX
+  mood={mood}
+  action={zeroAction}
+  emotion={emotion}
+/>
   <FlyingMessage text={flyingMessage} id={flyingId} />
   <CenterReply loading={loading} reply={error || reply} />
 </main>
