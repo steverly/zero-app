@@ -1118,9 +1118,14 @@ app.post("/api/reply", async (req, res) => {
       zeroState = DEFAULT_ZERO_STATE,
     } = req.body || {};
 
-console.log("LANGUAGE RECEIVED:", language, "| MESSAGE:", cleanMessage);
-
     const cleanMessage = String(message).trim();
+
+    console.log(
+      "LANGUAGE RECEIVED:",
+      language,
+      "| MESSAGE:",
+      cleanMessage
+    );
 
     if (!cleanMessage) {
       return res.status(400).json({ message: "Message vide." });
