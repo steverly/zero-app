@@ -126,6 +126,18 @@ function normalizeEmotion(input, state) {
   };
 }
 
+function isChallengeRequest(text) {
+  const t = String(text || "")
+    .toLowerCase()
+    .trim();
+
+  return (
+    /\b(on joue|joue avec moi|viens on joue|je te défie|lance le jeu|fais une partie)\b/.test(t) ||
+    /\b(let'?s play|play with me|challenge me|wanna play|start the game)\b/.test(t) ||
+    /\b(ayo main|main yuk|main sama aku|kita main|mau main)\b/.test(t)
+  );
+}
+
 function normalizeAction(action) {
   return ALLOWED_ACTIONS.has(action) ? action : "none";
 }
@@ -1199,7 +1211,9 @@ app.post("/api/reply", async (req, res) => {
     });
 
 const emotion = normalizeEmotion(parsed.emotion, nextState);
-const action = normalizeAction(parsed.action);
+const action = isChallengeRequest(cleanMessage)
+  ? "challenge"
+  : normalizeAction(parsed.action);
 const followUp = normalizeFollowUp(parsed.followUp);
 const reply = cleanReply(parsed.reply) || "j'ai rien à dire là";
 
