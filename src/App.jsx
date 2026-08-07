@@ -6,6 +6,7 @@ import { Purchases } from '@revenuecat/purchases-capacitor';
 import ZeroEyes from "./ZeroEyes";
 import ZeroEmotionFX from "./ZeroEmotionFX";
 import ZeroChallenge from "./ZeroChallenge";
+import ZeroEntity from "./ZeroEntity";
 
 const MAX_CHARS = 2000;
 const FREE_MESSAGES_START = 6;
@@ -880,13 +881,17 @@ setEmotion(data.emotion);
 if (data.state) setZeroState(data.state);
 setZeroAction(data.action || "none");
 
-if (data.action === "challenge") {
-  setChallengeLanguage(language);
+// Challenge désactivé pour le moment
 
-  window.setTimeout(() => {
-    setChallengeOpen(true);
-  }, 900);
+/*
+if (data.action === "challenge") {
+    setChallengeLanguage(language);
+
+    window.setTimeout(() => {
+        setChallengeOpen(true);
+    }, 900);
 }
+*/
 
 if (
   data.followUp?.shouldSend &&
@@ -918,18 +923,21 @@ if (
   }, data.followUp.delayMs);
 }
 
+
+
 const e = data.emotion;
 
-if (data.action === "refuse") setMood("annoyed");
-else if (data.action === "laugh") setMood("funny");
-else if (data.action === "excited") setMood("hyped");
-else if (data.action === "soften") setMood("warm");
-else if (e.annoyance > 0.65) setMood("annoyed");
-else if (e.humor > 0.55) setMood("funny");
-else if (e.warmth > 0.6) setMood("warm");
-else if (e.energy > 0.7) setMood("hyped");
-else if (e.confidence > 0.75) setMood("sharp");
-else setMood("replying");
+if (data.action === "refuse" || e.annoyance > 0.9) {
+  setMood("annoyed");
+} else if (data.action === "laugh" || e.humor > 0.72) {
+  setMood("funny");
+} else if (data.action === "excited") {
+  setMood("hyped");
+} else if (data.action === "soften" || e.warmth > 0.78) {
+  setMood("warm");
+} else {
+  setMood("replying");
+}
 
 setTimeout(() => {
   setMood("idle");
@@ -1064,12 +1072,17 @@ if (!appReady) {
 
       <main className="main-area">
   <InteractiveBackground />
-  <ZeroEyes mood={mood} action={zeroAction} />
-  <ZeroEmotionFX
+ 
+<ZeroEntity
   mood={mood}
   action={zeroAction}
   emotion={emotion}
+  loading={loading}
+  input={input}
+  reply={reply}
 />
+
+
   <FlyingMessage text={flyingMessage} id={flyingId} />
   <CenterReply loading={loading} reply={error || reply} />
 </main>

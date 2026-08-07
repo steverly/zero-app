@@ -1211,9 +1211,7 @@ app.post("/api/reply", async (req, res) => {
     });
 
 const emotion = normalizeEmotion(parsed.emotion, nextState);
-const action = isChallengeRequest(cleanMessage)
-  ? "challenge"
-  : normalizeAction(parsed.action);
+const ENABLE_CHALLENGE = false;
 const followUp = normalizeFollowUp(parsed.followUp);
 const reply = cleanReply(parsed.reply) || "j'ai rien à dire là";
 
