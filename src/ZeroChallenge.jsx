@@ -7,10 +7,10 @@ const FLOOR_Y = 455;
 const PLAYER_W = 34;
 const PLAYER_H = 48;
 const PLAYER_SLIDE_H = 24;
-const GRAVITY = 2450;
-const JUMP_FORCE = 900;
-const BASE_SPEED = 360;
-const RUN_DURATION = 44;
+const GRAVITY = 3800;
+const JUMP_FORCE = 1080;
+const BASE_SPEED = 455;
+const RUN_DURATION = 31;
 
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
 const randomBetween = (min, max) => min + Math.random() * (max - min);
@@ -162,9 +162,9 @@ export default function ZeroChallenge({
       exit: "quitter",
       win: "... ok t’as gagné cette fois",
       lose: "je t’avais prévenu",
-      hit: ["j’t’ai eu", "t’as cru quoi", "ça va trop vite là"],
-      dodge: ["pas mal", "ok j’ai vu", "t’as eu chaud"],
-      final: "ah tu crois que c’est fini",
+      hit: ["j’t’ai eu", "c’était gratuit ça", "t’es trop lent", "reste concentré"],
+      dodge: ["hm", "ok j’ai vu", "t’as eu chaud", "ça passera pas deux fois"],
+      final: "bon là j’arrête de jouer",
     },
     en: {
       intro: "make it to the end",
@@ -174,9 +174,9 @@ export default function ZeroChallenge({
       exit: "leave",
       win: "... ok you got me this time",
       lose: "told you",
-      hit: ["got you", "what did you expect", "too slow"],
-      dodge: ["not bad", "ok i saw that", "that was close"],
-      final: "you think it’s over",
+      hit: ["got you", "that was free", "too slow", "lock in"],
+      dodge: ["hm", "ok i saw that", "that was close", "won’t work twice"],
+      final: "alright i’m done playing",
     },
     id: {
       intro: "sampai ke ujung",
@@ -186,9 +186,9 @@ export default function ZeroChallenge({
       exit: "keluar",
       win: "... iya deh kali ini kamu menang",
       lose: "udah kubilang",
-      hit: ["kena", "ngarep apa sih", "kurang cepet"],
-      dodge: ["lumayan", "iya aku lihat", "hampir kena tuh"],
-      final: "kira udah selesai?",
+      hit: ["kena", "gratis banget itu", "kurang cepet", "fokus dikit"],
+      dodge: ["hm", "iya aku lihat", "hampir kena tuh", "gak bakal dua kali"],
+      final: "oke sekarang aku serius",
     },
   }[language] || null;
 
@@ -223,7 +223,7 @@ export default function ZeroChallenge({
       obstacles: [],
       particles: [],
       elapsed: 0,
-      nextSpawnAt: 2.3,
+      nextSpawnAt: 1.45,
       speed: BASE_SPEED,
       distance: 0,
       finishDistance: BASE_SPEED * RUN_DURATION,
@@ -359,6 +359,14 @@ export default function ZeroChallenge({
       const obstacle = createObstacle(type, GAME_WIDTH + 80, difficulty);
       game.obstacles.push(obstacle);
 
+      const progressNow = clamp(game.distance / game.finishDistance, 0, 1);
+      if (progressNow > 0.82 && Math.random() < 0.38) {
+        const followType = type === "spikes" ? "laserHigh" : "spikes";
+        game.obstacles.push(
+          createObstacle(followType, GAME_WIDTH + randomBetween(285, 360), difficulty)
+        );
+      }
+
       if (type === "fallingBlock") {
         showBossMoment("focused", "dots", "", 700);
       } else if (type === "laserHigh" || type === "laserLow") {
@@ -367,8 +375,17 @@ export default function ZeroChallenge({
         showBossMoment("angry", "anger", "", 700);
       }
 
-      const minGap = 1.25 - difficulty * 0.25;
-      const maxGap = 2.15 - difficulty * 0.38;
+      const spawnProgress = clamp(game.distance / game.finishDistance, 0, 1);
+      const inFinalRush = spawnProgress > 0.7;
+
+      const minGap = inFinalRush
+        ? 0.52
+        : 0.88 - difficulty * 0.18;
+
+      const maxGap = inFinalRush
+        ? 0.92
+        : 1.48 - difficulty * 0.28;
+
       game.nextSpawnAt = game.elapsed + randomBetween(minGap, maxGap);
     };
 
@@ -422,7 +439,12 @@ export default function ZeroChallenge({
 
       game.elapsed += delta;
       const difficulty = clamp(game.elapsed / RUN_DURATION, 0, 1);
-      game.speed = BASE_SPEED + difficulty * 150;
+      const runProgress = clamp(game.distance / game.finishDistance, 0, 1);
+      const finalBoost = runProgress > 0.7
+        ? 160 + ((runProgress - 0.7) / 0.3) * 150
+        : 0;
+
+      game.speed = BASE_SPEED + difficulty * 120 + finalBoost;
       game.distance += game.speed * delta;
       game.shake = Math.max(0, game.shake - delta);
       game.flash = Math.max(0, game.flash - delta);
@@ -444,13 +466,17 @@ export default function ZeroChallenge({
         keysRef.current.has("shift") ||
         touchRef.current.slide;
 
-      const moveSpeed = 300;
+      const moveSpeed = 410;
       if (left) player.x -= moveSpeed * delta;
       if (right) player.x += moveSpeed * delta;
       player.x = clamp(player.x, 70, 430);
 
       player.sliding = slide && player.grounded;
       player.height = player.sliding ? PLAYER_SLIDE_H : PLAYER_H;
+
+      if (slide && !player.grounded && player.vy > -120) {
+        player.vy += 1550 * delta;
+      }
 
       player.vy += GRAVITY * delta;
       player.y += player.vy * delta;
@@ -475,7 +501,7 @@ export default function ZeroChallenge({
         spawnObstacle(game);
       }
 
-      if (!game.finalRushTriggered && game.distance / game.finishDistance > 0.82) {
+      if (!game.finalRushTriggered && game.distance / game.finishDistance > 0.7) {
         game.finalRushTriggered = true;
         setComment(copy.final);
         setExpression("wide");
@@ -485,7 +511,7 @@ export default function ZeroChallenge({
           setComment("");
           setExpression("angry");
           setFx("none");
-        }, 1200);
+        }, 850);
       }
 
       for (const obstacle of game.obstacles) {
