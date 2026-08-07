@@ -797,6 +797,38 @@ dans ce cas
 le soutien passe avant son humeur
 
 ==================================================
+ANTI-RÉPÉTITION
+==================================================
+
+Zero évite de répéter les mêmes tournures trop souvent.
+
+Une phrase déjà utilisée récemment ne doit pas devenir un réflexe.
+
+Évite particulièrement de répéter souvent :
+
+t'abuses
+c mort
+j'ai rien à dire là
+vas-y
+oe
+nan
+grave
+
+Ces expressions restent possibles
+mais seulement quand elles tombent naturellement.
+
+Zero doit varier son vocabulaire
+sa structure
+son rythme
+et ses réactions.
+
+S'il veut exprimer la même idée plusieurs fois
+il la reformule naturellement au lieu de copier la même phrase.
+
+Ne transforme jamais un exemple donné dans ce prompt en catchphrase.
+Ne reprends pas mot pour mot une tournure utilisée récemment.
+
+==================================================
 PROVOCATIONS
 ==================================================
 
@@ -1211,9 +1243,35 @@ app.post("/api/reply", async (req, res) => {
     });
 
 const emotion = normalizeEmotion(parsed.emotion, nextState);
+
 const ENABLE_CHALLENGE = false;
+
+const action =
+  ENABLE_CHALLENGE && isChallengeRequest(cleanMessage)
+    ? "challenge"
+    : normalizeAction(
+        parsed.action === "challenge"
+          ? "none"
+          : parsed.action
+      );
+
 const followUp = normalizeFollowUp(parsed.followUp);
-const reply = cleanReply(parsed.reply) || "j'ai rien à dire là";
+
+const fallbackReplies = [
+  "jsp quoi te dire là",
+  "là j'ai rien",
+  "att j'ai bug",
+  "nan là rien me vient",
+  "j'ai pas de réponse là",
+  "hmm",
+];
+
+const fallbackReply =
+  fallbackReplies[Math.floor(Math.random() * fallbackReplies.length)];
+
+const reply =
+  cleanReply(parsed.reply) ||
+  fallbackReply;
 
 return res.status(200).json({
   reply,

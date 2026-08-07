@@ -238,7 +238,10 @@
   }
 }
 
-.center-stage,
+.center-stage {
+  z-index: 15;
+}
+
 .reply-shell,
 .reply-text {
   position: relative;
