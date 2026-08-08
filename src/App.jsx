@@ -859,6 +859,7 @@ export default function App() {
 
   const [coreOpen, setCoreOpen] = useState(false);
   const [arcadeOpen, setArcadeOpen] = useState(false);
+  const [arcadeGameActive, setArcadeGameActive] = useState(false);
   const [arcadeStartGame, setArcadeStartGame] = useState("");
   const [shopOpen, setShopOpen] = useState(false);
   const [walletOpen, setWalletOpen] = useState(false);
@@ -1072,7 +1073,7 @@ const followUpTimeoutRef = useRef(null);
   useEffect(() => {
     const modalOpen =
       coreOpen ||
-      arcadeOpen ||
+      (arcadeOpen && !arcadeGameActive) ||
       shopOpen ||
       walletOpen ||
       settingsOpen ||
@@ -1085,12 +1086,19 @@ const followUpTimeoutRef = useRef(null);
   }, [
     coreOpen,
     arcadeOpen,
+    arcadeGameActive,
     shopOpen,
     walletOpen,
     settingsOpen,
     paywallOpen,
     premiumOpen,
   ]);
+
+  useEffect(() => {
+    zeroAudio.setMode(
+      arcadeOpen && arcadeGameActive ? "arcade" : "home"
+    );
+  }, [arcadeOpen, arcadeGameActive]);
 
 
   useEffect(() => {
@@ -2448,8 +2456,10 @@ if (!appReady) {
       isPremium={isPremium}
       onClose={() => {
         setArcadeOpen(false);
+        setArcadeGameActive(false);
         setArcadeStartGame("");
       }}
+      onGameActive={setArcadeGameActive}
       onGameFinish={handleGameFinish}
       language={language}
     />

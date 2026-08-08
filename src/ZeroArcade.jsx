@@ -2037,6 +2037,7 @@ export default function ZeroArcade({
   wallet,
   isPremium,
   onClose,
+  onGameActive,
   onGameFinish,
   language = "fr",
 }) {
@@ -2065,6 +2066,11 @@ export default function ZeroArcade({
       normalizeInitialGame(initialGameId)
     );
   }, [open, initialGameId]);
+
+  useEffect(() => {
+    onGameActive?.(Boolean(gameId));
+    return () => onGameActive?.(false);
+  }, [gameId, onGameActive]);
 
   const gameConfigs = useMemo(
     () =>

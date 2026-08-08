@@ -1,5 +1,19 @@
 const SETTINGS_KEY = "zero_audio_settings_v2";
-const OFFICIAL_THEME_URL = "/audio/zero-theme.mp3";
+const HOME_PLAYLIST = [
+  { url: "/audio/zero-theme.mp3", name: "Zero Theme" },
+  { url: "/audio/home-02.mp3", name: "Home 02" },
+  { url: "/audio/home-03.mp3", name: "Home 03" },
+  { url: "/audio/home-04.mp3", name: "Home 04" },
+];
+
+const ARCADE_PLAYLIST = [
+  { url: "/audio/arcade-01.mp3", name: "Arcade 01" },
+  { url: "/audio/arcade-02.mp3", name: "Arcade 02" },
+  { url: "/audio/arcade-03.mp3", name: "Arcade 03" },
+  { url: "/audio/arcade-04.mp3", name: "Arcade 04" },
+];
+
+const PLAYLISTS = { home: HOME_PLAYLIST, arcade: ARCADE_PLAYLIST };
 
 let audioContext = null;
 let musicElement = null;
@@ -15,9 +29,45 @@ let state = {
   trackName: "Zero Theme",
   muffled: false,
   speaking: false,
+  mode: "home",
 };
 
 const listeners = new Set();
+let currentTrack = null;
+let previousByMode = { home: "", arcade: "" };
+let transitionTimer = null;
+
+function playlistFor(mode = state.mode) {
+  return PLAYLISTS[mode] || PLAYLISTS.home;
+}
+
+function shuffledCandidate(mode = state.mode) {
+  const playlist = playlistFor(mode);
+  const candidates = playlist.filter(
+    (track) => track.url !== currentTrack?.url && track.url !== previousByMode[mode]
+  );
+  const pool = candidates.length
+    ? candidates
+    : playlist.filter((track) => track.url !== currentTrack?.url);
+  const finalPool = pool.length ? pool : playlist;
+  return finalPool[Math.floor(Math.random() * finalPool.length)];
+}
+
+function setTrack(track, { autoplay = true } = {}) {
+  if (!musicElement || !track) return;
+  if (currentTrack?.url) previousByMode[state.mode] = currentTrack.url;
+  currentTrack = track;
+  state.trackName = track.name;
+  state.hasTrack = true;
+  musicElement.src = track.url;
+  musicElement.load();
+  emit();
+  if (autoplay && state.enabled) tryPlay();
+}
+
+function nextTrack() {
+  setTrack(shuffledCandidate(state.mode));
+}
 
 function emit() {
   listeners.forEach((listener) => {
@@ -87,12 +137,18 @@ function ensureGraph() {
   if (!ctx) return false;
 
   musicElement = document.createElement("audio");
-  musicElement.loop = true;
+  musicElement.loop = false;
   musicElement.preload = "auto";
   musicElement.playsInline = true;
-  musicElement.src = OFFICIAL_THEME_URL;
+
+  musicElement.addEventListener("ended", () => nextTrack());
 
   musicElement.addEventListener("error", () => {
+    const fallback = HOME_PLAYLIST[0];
+    if (currentTrack?.url !== fallback.url) {
+      setTrack(fallback);
+      return;
+    }
     state.hasTrack = false;
     emit();
   });
@@ -118,7 +174,7 @@ function ensureGraph() {
   musicGain.connect(ctx.destination);
 
   applyMix(true);
-
+  setTrack(shuffledCandidate("home"), { autoplay: false });
   return true;
 }
 
@@ -336,7 +392,39 @@ export const zeroAudio = {
   },
 
   getThemeUrl() {
-    return OFFICIAL_THEME_URL;
+    return HOME_PLAYLIST[0].url;
+  },
+
+  getMode() {
+    return state.mode;
+  },
+
+  async setMode(mode = "home") {
+    const nextMode = mode === "arcade" ? "arcade" : "home";
+    if (state.mode === nextMode && currentTrack) return;
+
+    state.mode = nextMode;
+    emit();
+    if (!ensureGraph()) return;
+
+    const ctx = context();
+    const now = ctx?.currentTime || 0;
+    if (musicGain && ctx) {
+      musicGain.gain.cancelScheduledValues(now);
+      musicGain.gain.setTargetAtTime(0.0001, now, 0.12);
+    }
+
+    window.clearTimeout(transitionTimer);
+    transitionTimer = window.setTimeout(async () => {
+      setTrack(shuffledCandidate(nextMode), { autoplay: false });
+      applyMix();
+      if (state.enabled) await tryPlay();
+    }, 420);
+  },
+
+  next() {
+    if (!ensureGraph()) return;
+    nextTrack();
   },
 
   async init() {
