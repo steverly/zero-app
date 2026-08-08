@@ -8,10 +8,43 @@ export default function ZeroSettings({
   language,
   onLanguage,
   onClose,
+  audioState,
+  onToggleMusic,
+  onMusicVolume,
 }) {
   if (!open) return null;
 
   const copy = getZeroCopy(language);
+
+  const audioCopy = {
+    fr: {
+      title: "Musique",
+      hint: "thème officiel de Zero",
+      theme: "Zero Theme",
+      on: "ON",
+      off: "OFF",
+      volume: "Volume",
+      missing: "zero-theme.mp3 introuvable",
+    },
+    en: {
+      title: "Music",
+      hint: "Zero's official theme",
+      theme: "Zero Theme",
+      on: "ON",
+      off: "OFF",
+      volume: "Volume",
+      missing: "zero-theme.mp3 not found",
+    },
+    id: {
+      title: "Musik",
+      hint: "tema resmi Zero",
+      theme: "Zero Theme",
+      on: "ON",
+      off: "OFF",
+      volume: "Volume",
+      missing: "zero-theme.mp3 tidak ditemukan",
+    },
+  }[language] || null;
 
   return (
     <motion.div
@@ -92,6 +125,62 @@ export default function ZeroSettings({
                 );
               }
             )}
+          </div>
+        </section>
+
+        <section className="zero-settings-section zero65-audio-settings">
+          <div className="zero-settings-title">
+            <span>{audioCopy.title}</span>
+            <small>{audioCopy.hint}</small>
+          </div>
+
+          <div className="zero65-audio-card">
+            <div className="zero65-audio-track">
+              <span className="zero65-music-disc" aria-hidden="true">
+                <i />
+              </span>
+
+              <span>
+                <strong>{audioCopy.theme}</strong>
+                <small>
+                  {audioState?.hasTrack
+                    ? "zero-theme.mp3"
+                    : audioCopy.missing}
+                </small>
+              </span>
+
+              <button
+                type="button"
+                className={[
+                  "zero65-audio-switch",
+                  audioState?.enabled ? "is-on" : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                onClick={onToggleMusic}
+              >
+                {audioState?.enabled
+                  ? audioCopy.on
+                  : audioCopy.off}
+              </button>
+            </div>
+
+            <div className="zero65-volume">
+              <span>{audioCopy.volume}</span>
+
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={audioState?.volume ?? 0.42}
+                onChange={(event) =>
+                  onMusicVolume(
+                    Number(event.target.value)
+                  )
+                }
+              />
+            </div>
           </div>
         </section>
       </main>

@@ -53,6 +53,7 @@ import {
 } from "./zero-language";
 
 import { gameSfx } from "./zero-game-sfx";
+import { zeroAudio } from "./zero-audio";
 import { getZeroCopy } from "./zero-i18n";
 import "./zero-v5.css";
 
@@ -200,7 +201,11 @@ async function getUpgradeLine(language = "fr") {
 // --------------------
 // UI Helpers
 // --------------------
-function TypewriterText({ text, speed = 16 }) {
+function TypewriterText({
+  text,
+  speed = 16,
+  expression = "normal",
+}) {
   const [visible, setVisible] = useState("");
 
   useEffect(() => {
@@ -208,14 +213,50 @@ function TypewriterText({ text, speed = 16 }) {
     if (!text) return;
 
     let index = 0;
+    let blipStep = 0;
+
+    zeroAudio.setSpeaking(true);
+
     const interval = setInterval(() => {
       index += 1;
-      setVisible(text.slice(0, index));
-      if (index >= text.length) clearInterval(interval);
+
+      const character =
+        text[index - 1] || "";
+
+      setVisible(
+        text.slice(0, index)
+      );
+
+      blipStep += 1;
+
+      // NPC-style voice: not every single letter.
+      // Roughly one blip every 2–4 readable characters.
+      const cadence =
+        2 + Math.floor(Math.random() * 3);
+
+      if (
+        blipStep >= cadence &&
+        !/\s/.test(character)
+      ) {
+        zeroAudio.voiceBlip(
+          expression,
+          character
+        );
+
+        blipStep = 0;
+      }
+
+      if (index >= text.length) {
+        clearInterval(interval);
+        zeroAudio.setSpeaking(false);
+      }
     }, speed);
 
-    return () => clearInterval(interval);
-  }, [text, speed]);
+    return () => {
+      clearInterval(interval);
+      zeroAudio.setSpeaking(false);
+    };
+  }, [text, speed, expression]);
 
  return (
   <span className="typewriter-text">
@@ -427,6 +468,7 @@ function CenterReply({
               {reply ? (
                 <TypewriterText
                   text={reply}
+                  expression={expression}
                   speed={
                     expression === "sharp"
                       ? 8
@@ -807,6 +849,7 @@ export default function App() {
   const [shopOpen, setShopOpen] = useState(false);
   const [walletOpen, setWalletOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [audioState, setAudioState] = useState(() => zeroAudio.getState());
   const [language, setLanguage] = useState(() => loadZeroLanguage());
   const [coinRewardLoading, setCoinRewardLoading] = useState(false);
   const [feedPulse, setFeedPulse] = useState(0);
@@ -924,6 +967,80 @@ const followUpTimeoutRef = useRef(null);
   useEffect(() => {
     saveZeroLanguage(language);
   }, [language]);
+
+  useEffect(() => {
+    const unsubscribe =
+      zeroAudio.subscribe(
+        setAudioState
+      );
+
+    zeroAudio.init();
+
+    // Browsers only allow audio after a user gesture.
+    const unlock = () => {
+      zeroAudio.unlock();
+
+      window.removeEventListener(
+        "pointerdown",
+        unlock
+      );
+
+      window.removeEventListener(
+        "keydown",
+        unlock
+      );
+    };
+
+    window.addEventListener(
+      "pointerdown",
+      unlock,
+      { passive: true }
+    );
+
+    window.addEventListener(
+      "keydown",
+      unlock,
+      { passive: true }
+    );
+
+    return () => {
+      unsubscribe();
+
+      window.removeEventListener(
+        "pointerdown",
+        unlock
+      );
+
+      window.removeEventListener(
+        "keydown",
+        unlock
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    const modalOpen =
+      coreOpen ||
+      arcadeOpen ||
+      shopOpen ||
+      walletOpen ||
+      settingsOpen ||
+      paywallOpen ||
+      premiumOpen;
+
+    zeroAudio.setMuffled(
+      modalOpen
+    );
+  }, [
+    coreOpen,
+    arcadeOpen,
+    shopOpen,
+    walletOpen,
+    settingsOpen,
+    paywallOpen,
+    premiumOpen,
+  ]);
+
 
   useEffect(() => {
     const currentStage = getCoreStageIndex(
@@ -1902,6 +2019,36 @@ if (!appReady) {
           </motion.button>
 
           <motion.button
+            className={[
+              "zero65-music-top",
+              audioState.enabled &&
+              audioState.hasTrack
+                ? "is-on"
+                : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            type="button"
+            aria-label={
+              audioState.enabled
+                ? "Couper la musique"
+                : "Activer la musique"
+            }
+            whileTap={{ scale: 0.92 }}
+            onClick={async () => {
+              gameSfx.soft();
+
+              await zeroAudio.toggle();
+            }}
+          >
+            <span aria-hidden="true">
+              <i />
+              <i />
+              <i />
+            </span>
+          </motion.button>
+
+          <motion.button
             className="zero-settings-top"
             type="button"
             aria-label={copy.common.settings}
@@ -2098,6 +2245,9 @@ if (!appReady) {
       open={settingsOpen}
       language={language}
       onLanguage={handleLanguageChange}
+      audioState={audioState}
+      onToggleMusic={() => zeroAudio.toggle()}
+      onMusicVolume={(value) => zeroAudio.setVolume(value)}
       onClose={() => setSettingsOpen(false)}
     />
   ) : null}

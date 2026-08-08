@@ -57,21 +57,39 @@ function tone({
 export const gameSfx = {
   tap() {
     tone({
-      frequency: 480,
-      endFrequency: 620,
-      duration: 0.045,
-      volume: 0.028,
+      frequency: 420,
+      endFrequency: 535,
+      duration: 0.04,
+      volume: 0.022,
       type: "triangle",
+    });
+
+    tone({
+      frequency: 780,
+      endFrequency: 640,
+      duration: 0.032,
+      volume: 0.008,
+      type: "sine",
+      delay: 0.012,
     });
   },
 
   soft() {
     tone({
-      frequency: 360,
-      endFrequency: 440,
-      duration: 0.08,
-      volume: 0.022,
+      frequency: 310,
+      endFrequency: 390,
+      duration: 0.075,
+      volume: 0.016,
       type: "sine",
+    });
+
+    tone({
+      frequency: 505,
+      endFrequency: 545,
+      duration: 0.055,
+      volume: 0.006,
+      type: "triangle",
+      delay: 0.018,
     });
   },
 
