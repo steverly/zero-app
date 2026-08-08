@@ -383,33 +383,31 @@ function CenterReply({
   awayAccelerating = false,
   reconciliationStage = 0,
 }) {
-  useEffect(() => {
-    if (!reply || loading) {
-      return undefined;
-    }
+ useEffect(() => {
+  if (!reply || loading) {
+    return undefined;
+  }
 
-    sfx.arrive();
+  sfx.arrive();
 
-    const timer =
-      window.setTimeout(() => {
-        zeroVoice.speak(
-          reply,
-          {
-            language,
-            mood,
-          }
-        );
-      }, 220);
+  const timer = window.setTimeout(() => {
+    zeroVoice.react({
+      mood,
+      action,
+      emotion,
+      spontaneous,
+    });
+  }, spontaneous ? 90 : 170);
 
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [
-    reply,
-    loading,
-    language,
-  ]);
-
+  return () => {
+    window.clearTimeout(timer);
+  };
+}, [
+  reply,
+  loading,
+  action,
+  spontaneous,
+]);
   const humor = Number(emotion?.humor || 0);
   const surprise = Number(emotion?.surprise || 0);
   const annoyance = Number(emotion?.annoyance || 0);

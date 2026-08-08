@@ -177,7 +177,8 @@ function shouldStaySilent({
       ? 0.34
       : 0.46;
 
-  return Math.random() < silentChance;
+return Math.random() < silentChance;
+}
 
 function chooseReaction({
   mood = "replying",
