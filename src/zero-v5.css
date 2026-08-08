@@ -10738,3 +10738,63 @@ small {
 .zero-entity {
   pointer-events: none !important;
 }
+
+
+/* =========================================
+   ZERO — SAFE REPLY AREA PATCH
+   ========================================= */
+
+.center-stage {
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.reply-shell {
+  width: min(88vw, 760px);
+  max-height: min(38vh, 320px);
+  overflow: hidden;
+}
+
+.reply-text {
+  max-height: min(34vh, 280px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+
+  padding-right: 6px;
+
+  scrollbar-width: thin;
+}
+
+.reply-text::-webkit-scrollbar {
+  width: 4px;
+}
+
+.reply-text::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.12);
+  border-radius: 999px;
+}
+
+/* laisse toujours un vrai espace au-dessus du composer */
+.main-area {
+  padding-bottom: 110px !important;
+  box-sizing: border-box;
+}
+
+@media (max-width: 680px) {
+  .reply-shell {
+    width: 100%;
+    max-height: 30vh;
+  }
+
+  .reply-text {
+    max-height: 27vh;
+  }
+
+  .main-area {
+    padding-bottom:
+      calc(
+        92px +
+        env(safe-area-inset-bottom)
+      ) !important;
+  }
+}

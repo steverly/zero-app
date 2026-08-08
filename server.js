@@ -24,6 +24,18 @@ import { tryLocalMicroReply } from "./server/zeroLocal.js";
 
 dotenv.config();
 
+const MAX_ZERO_REPLY_CHARS = 420;
+
+function clampZeroReply(text = "") {
+  const clean = String(text || "").trim();
+
+  if (clean.length <= MAX_ZERO_REPLY_CHARS) {
+    return clean;
+  }
+
+  return clean.slice(0, MAX_ZERO_REPLY_CHARS - 1).trimEnd() + "…";
+}
+
 const app = express();
 
 app.use(cors({ origin: true }));
@@ -270,11 +282,13 @@ app.post("/api/reply", rateLimit, async (req, res) => {
       model.usedMemoryId = "";
     }
 
-    model.reply =
-      clampReply(
-        model.reply,
-        budget.maxChars
-      ) || "...";
+  model.reply =
+  clampZeroReply(
+    clampReply(
+      model.reply,
+      budget.maxChars
+    )
+  ) || "...";
 
     const nextState =
       deriveNextState(
