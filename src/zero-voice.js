@@ -133,28 +133,7 @@ function shouldStaySilent({
   spontaneous = false,
   emotion = {},
 }) {
-  const arcade =
-    state.mode === "arcade";
-
-  // Arcade Zero is intentionally much more vocal.
-  if (arcade) {
-    if (
-      kind === "initiative" ||
-      kind === "surpriseBig" ||
-      kind === "laugh" ||
-      kind === "annoyed" ||
-      kind === "frustrated"
-    ) {
-      return Math.random() < 0.12;
-    }
-
-    return Math.random() < 0.28;
-  }
-
-  if (
-    spontaneous &&
-    kind === "initiative"
-  ) {
+  if (spontaneous && kind === "initiative") {
     return Math.random() < 0.10;
   }
 
@@ -171,13 +150,14 @@ function shouldStaySilent({
   const energy =
     clamp(emotion.energy, 0, 1);
 
-  // Home/chat: vocal, but still not on every single reply.
+  // Silence is part of Zero's voice.
+  // Normal replies should NOT make a vocal sound every time.
   const silentChance =
     energy > 0.72
       ? 0.34
       : 0.46;
 
-return Math.random() < silentChance;
+  return Math.random() < silentChance;
 }
 
 function chooseReaction({
@@ -286,15 +266,10 @@ async function playReaction(
 
   const now = Date.now();
 
-  // Hard anti-spam. Arcade is deliberately snappier.
-  const hardCooldown =
-    state.mode === "arcade"
-      ? 650
-      : 1250;
-
+  // Hard anti-spam.
   if (
     !force &&
-    now - lastPlayedAt < hardCooldown
+    now - lastPlayedAt < 1050
   ) {
     return false;
   }
@@ -308,15 +283,10 @@ async function playReaction(
       "initiative",
     ].includes(kind);
 
-  const strongCooldown =
-    state.mode === "arcade"
-      ? 1900
-      : 3600;
-
   if (
     !force &&
     strong &&
-    now - lastStrongAt < strongCooldown
+    now - lastStrongAt < 3000
   ) {
     return false;
   }
@@ -378,6 +348,104 @@ async function playReaction(
     );
 
     return false;
+  }
+}
+
+
+function gameEventReaction(type, meta = {}) {
+  const result = String(meta.result || "").toLowerCase();
+
+  switch (type) {
+    case "start":
+      // One intentional greeting/challenge at the actual start of a game.
+      return {
+        kind: Math.random() < 0.72 ? "initiative" : "approve",
+        chance: 0.82,
+        force: false,
+      };
+
+    case "userMove":
+      // Small board-game observation, not every move.
+      return {
+        kind: Math.random() < 0.62 ? "think" : "realize",
+        chance: 0.22,
+        force: false,
+      };
+
+    case "zeroMove":
+      return {
+        kind: Math.random() < 0.66 ? "approve" : "think",
+        chance: 0.28,
+        force: false,
+      };
+
+    case "userGood":
+      return {
+        kind: Math.random() < 0.58 ? "confused" : "frustrated",
+        chance: 0.68,
+        force: false,
+      };
+
+    case "zeroGood":
+      return {
+        kind: Math.random() < 0.58 ? "laugh" : "approve",
+        chance: 0.68,
+        force: false,
+      };
+
+    case "userMiss":
+      return {
+        kind: Math.random() < 0.58 ? "laugh" : "realize",
+        chance: 0.46,
+        force: false,
+      };
+
+    case "zeroMiss":
+      return {
+        kind: Math.random() < 0.58 ? "annoyed" : "frustrated",
+        chance: 0.58,
+        force: false,
+      };
+
+    case "closeCall":
+      return {
+        kind: Math.random() < 0.55 ? "confused" : "surpriseBig",
+        chance: 0.72,
+        force: false,
+      };
+
+    case "early":
+      return {
+        kind: "laugh",
+        chance: 0.86,
+        force: false,
+      };
+
+    case "result":
+      if (result === "win") {
+        return {
+          kind: Math.random() < 0.58 ? "frustrated" : "annoyed",
+          chance: 1,
+          force: true,
+        };
+      }
+
+      if (result === "loss" || result === "lose") {
+        return {
+          kind: Math.random() < 0.56 ? "laugh" : "initiative",
+          chance: 1,
+          force: true,
+        };
+      }
+
+      return {
+        kind: Math.random() < 0.5 ? "think" : "realize",
+        chance: 0.92,
+        force: true,
+      };
+
+    default:
+      return null;
   }
 }
 
@@ -465,91 +533,26 @@ export const zeroVoice = {
     emit();
   },
 
-  arcadePulse() {
+  gameEvent(type, meta = {}) {
+    if (!state.enabled) return false;
+
+    const reaction =
+      gameEventReaction(type, meta);
+
+    if (!reaction) return false;
+
     if (
-      !state.enabled ||
-      state.mode !== "arcade"
+      !reaction.force &&
+      Math.random() > reaction.chance
     ) {
       return false;
     }
 
-    const roll = Math.random();
-
-    const kind =
-      roll < 0.20
-        ? "initiative"
-        : roll < 0.38
-          ? "laugh"
-          : roll < 0.56
-            ? "approve"
-            : roll < 0.72
-              ? "realize"
-              : roll < 0.86
-                ? "think"
-                : "confused";
-
     return playReaction(
-      kind,
+      reaction.kind,
       {
-        emotion: {
-          energy: 0.78,
-          humor: 0.46,
-          surprise: 0.18,
-          warmth: 0.5,
-        },
-        force: false,
-      }
-    );
-  },
-
-  gameResult(result = "") {
-    const value =
-      String(result).toLowerCase();
-
-    // Result is from the USER's perspective in the current Arcade flow.
-    // User win => Zero lost.
-    if (value === "win") {
-      return playReaction(
-        Math.random() < 0.58
-          ? "frustrated"
-          : "annoyed",
-        {
-          emotion: {
-            annoyance: 0.72,
-            energy: 0.72,
-          },
-          force: true,
-        }
-      );
-    }
-
-    if (
-      value === "loss" ||
-      value === "lose"
-    ) {
-      return playReaction(
-        Math.random() < 0.55
-          ? "laugh"
-          : "initiative",
-        {
-          emotion: {
-            humor: 0.76,
-            energy: 0.86,
-          },
-          force: true,
-        }
-      );
-    }
-
-    return playReaction(
-      Math.random() < 0.5
-        ? "think"
-        : "realize",
-      {
-        emotion: {
-          energy: 0.52,
-        },
-        force: true,
+        emotion: meta.emotion || {},
+        force: reaction.force,
       }
     );
   },

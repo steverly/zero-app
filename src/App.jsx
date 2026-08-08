@@ -383,31 +383,33 @@ function CenterReply({
   awayAccelerating = false,
   reconciliationStage = 0,
 }) {
- useEffect(() => {
-  if (!reply || loading) {
-    return undefined;
-  }
+  useEffect(() => {
+    if (!reply || loading) {
+      return undefined;
+    }
 
-  sfx.arrive();
+    sfx.arrive();
 
-  const timer = window.setTimeout(() => {
-    zeroVoice.react({
-      mood,
-      action,
-      emotion,
-      spontaneous,
-    });
-  }, spontaneous ? 90 : 170);
+    const timer =
+      window.setTimeout(() => {
+        zeroVoice.react({
+          mood,
+          action,
+          emotion,
+          spontaneous,
+        });
+      }, spontaneous ? 90 : 170);
 
-  return () => {
-    window.clearTimeout(timer);
-  };
-}, [
-  reply,
-  loading,
-  action,
-  spontaneous,
-]);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [
+    reply,
+    loading,
+    action,
+    spontaneous,
+  ]);
+
   const humor = Number(emotion?.humor || 0);
   const surprise = Number(emotion?.surprise || 0);
   const annoyance = Number(emotion?.annoyance || 0);
@@ -1400,50 +1402,13 @@ const followUpTimeoutRef = useRef(null);
 
   useEffect(() => {
     const nextMode =
-      arcadeOpen && arcadeGameActive
+      arcadeOpen
         ? "arcade"
         : "home";
 
     zeroAudio.setMode(nextMode);
     zeroVoice.setMode(nextMode);
   }, [arcadeOpen, arcadeGameActive]);
-
-  useEffect(() => {
-    if (
-      !arcadeOpen ||
-      !arcadeGameActive
-    ) {
-      return undefined;
-    }
-
-    let timer = null;
-
-    const scheduleNext = () => {
-      const delay =
-        4200 +
-        Math.random() * 4200;
-
-      timer = window.setTimeout(() => {
-        zeroVoice.arcadePulse();
-        scheduleNext();
-      }, delay);
-    };
-
-    // First little reaction shortly after the actual game starts.
-    timer = window.setTimeout(() => {
-      zeroVoice.arcadePulse();
-      scheduleNext();
-    }, 1700 + Math.random() * 1400);
-
-    return () => {
-      if (timer) {
-        window.clearTimeout(timer);
-      }
-    };
-  }, [
-    arcadeOpen,
-    arcadeGameActive,
-  ]);
 
 
 
@@ -2344,10 +2309,6 @@ useEffect(() => {
 ]);
 
 const handleGameFinish = (gameEvent) => {
-  zeroVoice.gameResult(
-    gameEvent?.result || ""
-  );
-
   setLivingCore((previous) =>
     addCareXP(
       recordLivingGame(previous, gameEvent.result),

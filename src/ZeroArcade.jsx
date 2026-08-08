@@ -5,6 +5,7 @@ import { ZERO_CONFIG } from "./zero-config";
 import { hasArcadePass } from "./zero-economy";
 import { hasWalletArcadePass } from "./zero-wallet";
 import { gameSfx } from "./zero-game-sfx";
+import { zeroVoice } from "./zero-voice";
 import { getZeroCopy } from "./zero-i18n";
 
 const pick = (items) =>
@@ -349,6 +350,9 @@ function TicTacToe({
       if (index === undefined) return;
 
       gameSfx.piece();
+      zeroVoice.gameEvent("zeroMove", {
+        gameId: "tictactoe",
+      });
 
       setBoard((previous) => {
         const next = [...previous];
@@ -372,6 +376,9 @@ function TicTacToe({
     }
 
     gameSfx.piece();
+    zeroVoice.gameEvent("userMove", {
+      gameId: "tictactoe",
+    });
 
     const next = [...board];
     next[index] = "U";
@@ -646,6 +653,9 @@ function ConnectFour({
       if (col === undefined) return;
 
       gameSfx.piece();
+      zeroVoice.gameEvent("zeroMove", {
+        gameId: "connect4",
+      });
 
       setBoard((previous) =>
         dropPiece(
@@ -670,6 +680,9 @@ function ConnectFour({
     if (!next) return;
 
     gameSfx.piece();
+    zeroVoice.gameEvent("userMove", {
+      gameId: "connect4",
+    });
     setBoard(next);
     setTurn(2);
   };
@@ -798,6 +811,9 @@ function ReflexGame({
       clearTimeout(timerRef.current);
 
       gameSfx.error();
+      zeroVoice.gameEvent("early", {
+        gameId: "reflex",
+      });
       setState("early");
       setLine(
         localComment(
@@ -1167,6 +1183,12 @@ function MemoryDuel({
     window.setTimeout(() => {
       if (same) {
         gameSfx.piece();
+        zeroVoice.gameEvent(
+          owner === "user"
+            ? "userGood"
+            : "zeroGood",
+          { gameId: "memory" }
+        );
 
         setDeck((previous) =>
           previous.map(
@@ -1195,6 +1217,12 @@ function MemoryDuel({
           setLine("j'garde");
         }
       } else {
+        zeroVoice.gameEvent(
+          owner === "user"
+            ? "userMiss"
+            : "zeroMiss",
+          { gameId: "memory" }
+        );
         setOpen([]);
 
         setTurn(
@@ -1481,6 +1509,8 @@ function TapDuel({
   const [done, setDone] = useState(false);
   const [line, setLine] = useState(copy.ready);
   const finishedRef = useRef(false);
+  const userHalfReactedRef = useRef(false);
+  const zeroHalfReactedRef = useRef(false);
 
   useEffect(() => {
     if (!started || done) return;
@@ -1516,6 +1546,30 @@ function TapDuel({
 
     return () => window.clearInterval(timer);
   }, [started, done, relationship]);
+
+  useEffect(() => {
+    const half = Math.ceil(target * 0.5);
+
+    if (
+      userScore >= half &&
+      !userHalfReactedRef.current
+    ) {
+      userHalfReactedRef.current = true;
+      zeroVoice.gameEvent("userGood", {
+        gameId: "tapduel",
+      });
+    }
+
+    if (
+      zeroScore >= half &&
+      !zeroHalfReactedRef.current
+    ) {
+      zeroHalfReactedRef.current = true;
+      zeroVoice.gameEvent("zeroGood", {
+        gameId: "tapduel",
+      });
+    }
+  }, [userScore, zeroScore, target]);
 
   useEffect(() => {
     if (finishedRef.current) return;
@@ -1578,6 +1632,8 @@ function TapDuel({
   const restart = () => {
     gameSfx.soft();
     finishedRef.current = false;
+    userHalfReactedRef.current = false;
+    zeroHalfReactedRef.current = false;
     setUserScore(0);
     setZeroScore(0);
     setStarted(false);
@@ -1727,6 +1783,18 @@ function SecretNumber({
       });
 
       return;
+    }
+
+    const distance = Math.abs(guess - secret);
+
+    if (distance <= Math.max(2, Math.round(secretMax * 0.08))) {
+      zeroVoice.gameEvent("closeCall", {
+        gameId: "secret",
+      });
+    } else {
+      zeroVoice.gameEvent("userMove", {
+        gameId: "secret",
+      });
     }
 
     setLine(
@@ -1896,6 +1964,20 @@ function Codebreaker({
     ];
 
     setHistory(nextHistory);
+
+    if (exact === codeLength - 1) {
+      zeroVoice.gameEvent("closeCall", {
+        gameId: "codebreaker",
+      });
+    } else if (exact === 0) {
+      zeroVoice.gameEvent("userMiss", {
+        gameId: "codebreaker",
+      });
+    } else {
+      zeroVoice.gameEvent("userMove", {
+        gameId: "codebreaker",
+      });
+    }
 
     if (exact === codeLength) {
       setDone(true);
@@ -2098,9 +2180,17 @@ export default function ZeroArcade({
 
     gameSfx.tap();
     setGameId(id);
+    zeroVoice.gameEvent("start", {
+      gameId: id,
+    });
   };
 
   const finish = (event) => {
+    zeroVoice.gameEvent("result", {
+      gameId: event.gameId,
+      result: event.result,
+    });
+
     if (event.result === "win") {
       gameSfx.win();
     } else if (
