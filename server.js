@@ -36,6 +36,30 @@ const openai = new OpenAI({
 const PORT = process.env.PORT || 3001;
 const MODEL = process.env.OPENAI_MODEL || "gpt-4.1-mini";
 
+function recoverReplyFromTruncatedJson(raw) {
+  const text = String(raw || "");
+
+  // The compact schema always puts `r` first.
+  // Capture a valid JSON string value, including escaped quotes.
+  const match = text.match(
+    /"r"\s*:\s*"((?:\\.|[^"\\])*)"/s
+  );
+
+  if (!match) {
+    return "";
+  }
+
+  try {
+    return JSON.parse(`"${match[1]}"`);
+  } catch {
+    return match[1]
+      .replace(/\\"/g, '"')
+      .replace(/\\n/g, "\n")
+      .replace(/\\\\/g, "\\")
+      .trim();
+  }
+}
+
 // -----------------------------------------------------
 // Garde-fou anti-abus simple.
 // Ce n'est PAS un système de facturation.
@@ -83,7 +107,7 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({
     ok: true,
     model: MODEL,
-    version: "zero-v6.3-clean-game-loop",
+    version: "zero-v6.3.1-json-budget-fix",
   });
 });
 
@@ -192,13 +216,37 @@ app.post("/api/reply", rateLimit, async (req, res) => {
     try {
       parsed = JSON.parse(raw);
     } catch {
-      console.error("ZERO_INVALID_JSON", raw);
+      const recoveredReply =
+        recoverReplyFromTruncatedJson(raw);
 
-      res.status(500).json({
-        message: "Ça a bug deux secondes. Réessaie.",
-      });
+      console.error(
+        "ZERO_INVALID_JSON",
+        JSON.stringify({
+          finishReason:
+            completion.choices[0]?.finish_reason || "",
+          raw,
+          recovered:
+            Boolean(recoveredReply),
+        })
+      );
 
-      return;
+      // Don't punish the user with a 500 just because
+      // non-visible metadata was cut.
+      if (recoveredReply) {
+        parsed = {
+          r: recoveredReply,
+          a: "none",
+          e: {},
+          s: {},
+          f: {},
+        };
+      } else {
+        res.status(500).json({
+          message: "Ça a bug deux secondes. Réessaie.",
+        });
+
+        return;
+      }
     }
 
     const model =
@@ -250,6 +298,12 @@ app.post("/api/reply", rateLimit, async (req, res) => {
           Number(usage.total_tokens || 0),
         inputChars: cleanMessage.length,
         historyMessages: history.length,
+        finishReason:
+          completion.choices[0]?.finish_reason || "",
+        outputBudgetTokens:
+          budget.maxTokens,
+        visibleReplyMaxChars:
+          budget.maxChars,
       })
     );
 
@@ -277,6 +331,6 @@ app.post("/api/reply", rateLimit, async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(
-    `Zero V6.3 lancé sur http://localhost:${PORT}`
+    `Zero V6.3.1 lancé sur http://localhost:${PORT}`
   );
 });

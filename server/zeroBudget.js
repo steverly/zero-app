@@ -39,29 +39,36 @@ export function chooseReplyBudget(message) {
     /\b(explique|développe|détaille|pourquoi|explain|details?|jelasin|kenapa)\b/i
       .test(text);
 
+  // IMPORTANT:
+  // maxTokens limits the ENTIRE structured JSON payload
+  // (reply + emotion + signals + follow-up + memory metadata),
+  // NOT just the visible reply.
+  //
+  // Visible reply size is still controlled independently
+  // by maxChars and clampReply().
   if (explicitlyDetailed) {
     return {
-      maxTokens: 190,
+      maxTokens: 440,
       maxChars: SERVER_LIMITS.maxReplyChars,
     };
   }
 
   if (length <= 24) {
     return {
-      maxTokens: 95,
+      maxTokens: 260,
       maxChars: 180,
     };
   }
 
   if (length <= 140) {
     return {
-      maxTokens: 135,
+      maxTokens: 320,
       maxChars: 280,
     };
   }
 
   return {
-    maxTokens: 170,
+    maxTokens: 380,
     maxChars: 380,
   };
 }
