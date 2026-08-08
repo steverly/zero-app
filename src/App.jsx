@@ -36,8 +36,6 @@ import ZeroCosmeticsLayer, { cosmeticClassNames } from "./ZeroCosmeticsLayer";
 import ZeroWorldBackground from "./ZeroWorldBackground";
 import { getCosmeticState } from "./zero-wallet";
 
-import { zeroVoice } from "./zero-voice";
-
 import {
   loadWallet,
   saveWallet,
@@ -58,6 +56,7 @@ import {
 
 import { gameSfx } from "./zero-game-sfx";
 import { zeroAudio } from "./zero-audio";
+import { zeroVoice } from "./zero-voice";
 import { getZeroCopy } from "./zero-i18n";
 import {
   loadBoundaryState,
@@ -384,33 +383,32 @@ function CenterReply({
   awayAccelerating = false,
   reconciliationStage = 0,
 }) {
-useEffect(() => {
-  if (!reply || loading) {
-    return;
-  }
+  useEffect(() => {
+    if (!reply || loading) {
+      return undefined;
+    }
 
-  sfx.arrive();
+    sfx.arrive();
 
-  const timer =
-    window.setTimeout(() => {
-      zeroVoice.speak(
-        reply,
-        {
-          language,
-          mood,
-        }
-      );
-    }, 180);
+    const timer =
+      window.setTimeout(() => {
+        zeroVoice.speak(
+          reply,
+          {
+            language,
+            mood,
+          }
+        );
+      }, 220);
 
-  return () => {
-    window.clearTimeout(timer);
-  };
-}, [
-  reply,
-  loading,
-  language,
-  mood,
-]);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [
+    reply,
+    loading,
+    language,
+  ]);
 
   const humor = Number(emotion?.humor || 0);
   const surprise = Number(emotion?.surprise || 0);
@@ -1082,6 +1080,7 @@ export default function App() {
   const [walletOpen, setWalletOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [audioState, setAudioState] = useState(() => zeroAudio.getState());
+  const [voiceState, setVoiceState] = useState(() => zeroVoice.getState());
   const [language, setLanguage] = useState(() => loadZeroLanguage());
   const [coinRewardLoading, setCoinRewardLoading] = useState(false);
   const [feedPulse, setFeedPulse] = useState(0);
@@ -1369,6 +1368,12 @@ const followUpTimeoutRef = useRef(null);
         unlock
       );
     };
+  }, []);
+
+  useEffect(() => {
+    return zeroVoice.subscribe(
+      setVoiceState
+    );
   }, []);
 
   useEffect(() => {
@@ -2778,7 +2783,6 @@ if (!appReady) {
 
 
   <FlyingMessage text={flyingMessage} id={flyingId} />
-  <div className={zeroInitiative ? "zero64-initiative-reply" : ""}>
   <CenterReply
     loading={loading}
     reply={error || reply}
@@ -2798,7 +2802,6 @@ if (!appReady) {
       boundaryState.reconciliationStage || 0
     )}
   />
-  </div>
 </main>
 
 
@@ -2917,6 +2920,9 @@ if (!appReady) {
       audioState={audioState}
       onToggleMusic={() => zeroAudio.toggle()}
       onMusicVolume={(value) => zeroAudio.setVolume(value)}
+      voiceState={voiceState}
+      onToggleVoice={() => zeroVoice.toggle()}
+      onTestVoice={() => zeroVoice.test(language)}
       onClose={() => setSettingsOpen(false)}
     />
   ) : null}

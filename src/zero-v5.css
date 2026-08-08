@@ -10740,61 +10740,118 @@ small {
 }
 
 
-/* =========================================
-   ZERO — SAFE REPLY AREA PATCH
-   ========================================= */
+/* =========================================================
+   ZERO V7.4 — VOICE TEST + NORMAL INITIATIVE POSITION
+   ========================================================= */
 
-.center-stage {
-  box-sizing: border-box;
-  overflow: hidden;
+/* Initiative must use the exact same physical reply position. */
+.zero64-initiative-reply {
+  display: contents !important;
+  position: static !important;
+  transform: none !important;
 }
 
-.reply-shell {
-  width: min(88vw, 760px);
-  max-height: min(38vh, 320px);
-  overflow: hidden;
+/* Keep the special "Zero spoke first" feel without moving the text. */
+.zero72-spontaneous {
+  position: relative;
 }
 
+/* No ugly visible scrollbar, scrolling still works. */
 .reply-text {
-  max-height: min(34vh, 280px);
-  overflow-y: auto;
-  overscroll-behavior: contain;
-
-  padding-right: 6px;
-
-  scrollbar-width: thin;
+  scrollbar-width: none !important;
+  -ms-overflow-style: none;
 }
 
 .reply-text::-webkit-scrollbar {
-  width: 4px;
+  display: none !important;
 }
 
-.reply-text::-webkit-scrollbar-thumb {
-  background: rgba(255,255,255,0.12);
-  border-radius: 999px;
+/* Voice settings */
+.zero74-voice-card {
+  display: grid;
+  gap: 12px;
 }
 
-/* laisse toujours un vrai espace au-dessus du composer */
-.main-area {
-  padding-bottom: 110px !important;
-  box-sizing: border-box;
+.zero74-voice-orb {
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  border-radius: 13px;
+
+  background:
+    radial-gradient(
+      circle at 50% 45%,
+      rgba(238,205,171,.12),
+      rgba(255,255,255,.025) 64%
+    );
 }
 
-@media (max-width: 680px) {
-  .reply-shell {
-    width: 100%;
-    max-height: 30vh;
-  }
+.zero74-voice-orb i {
+  width: 8px;
+  height: 4px;
 
-  .reply-text {
-    max-height: 27vh;
-  }
+  border-top:
+    2px solid rgba(247,239,226,.76);
 
-  .main-area {
-    padding-bottom:
-      calc(
-        92px +
-        env(safe-area-inset-bottom)
-      ) !important;
+  border-radius: 50%;
+
+  transform: rotate(7deg);
+}
+
+.zero74-voice-orb i:last-child {
+  transform: rotate(-7deg);
+}
+
+.zero74-test-voice {
+  width: 100%;
+  min-height: 42px;
+
+  border:
+    1px solid rgba(245,214,183,.14);
+
+  border-radius: 14px;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(219,158,125,.16),
+      rgba(173,154,211,.10)
+    );
+
+  color:
+    rgba(255,244,231,.76);
+
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .06em;
+
+  cursor: pointer;
+}
+
+.zero74-test-voice:hover {
+  border-color:
+    rgba(245,214,183,.25);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(219,158,125,.23),
+      rgba(173,154,211,.15)
+    );
+}
+
+.zero74-test-voice:disabled {
+  opacity: .35;
+  cursor: default;
+}
+
+@media(max-width:680px) {
+  .zero74-test-voice {
+    min-height: 46px;
   }
 }

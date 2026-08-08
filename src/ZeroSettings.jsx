@@ -11,6 +11,9 @@ export default function ZeroSettings({
   audioState,
   onToggleMusic,
   onMusicVolume,
+  voiceState,
+  onToggleVoice,
+  onTestVoice,
 }) {
   if (!open) return null;
 
@@ -43,6 +46,39 @@ export default function ZeroSettings({
       off: "OFF",
       volume: "Volume",
       missing: "zero-theme.mp3 tidak ditemukan",
+    },
+  }[language] || null;
+
+  const voiceCopy = {
+    fr: {
+      title: "Voix",
+      hint: "prototype local",
+      name: "Voix de Zero",
+      on: "ON",
+      off: "OFF",
+      test: "▶ TESTER LA VOIX",
+      unsupported: "pas dispo sur ce navigateur",
+      ready: "voix système",
+    },
+    en: {
+      title: "Voice",
+      hint: "local prototype",
+      name: "Zero voice",
+      on: "ON",
+      off: "OFF",
+      test: "▶ TEST VOICE",
+      unsupported: "not available in this browser",
+      ready: "system voice",
+    },
+    id: {
+      title: "Suara",
+      hint: "prototipe lokal",
+      name: "Suara Zero",
+      on: "ON",
+      off: "OFF",
+      test: "▶ TES SUARA",
+      unsupported: "nggak tersedia di browser ini",
+      ready: "suara sistem",
     },
   }[language] || null;
 
@@ -181,6 +217,67 @@ export default function ZeroSettings({
                 }
               />
             </div>
+          </div>
+        </section>
+
+        <section className="zero-settings-section zero74-voice-settings">
+          <div className="zero-settings-title">
+            <span>{voiceCopy.title}</span>
+            <small>{voiceCopy.hint}</small>
+          </div>
+
+          <div className="zero65-audio-card zero74-voice-card">
+            <div className="zero65-audio-track">
+              <span
+                className="zero74-voice-orb"
+                aria-hidden="true"
+              >
+                <i />
+                <i />
+              </span>
+
+              <span>
+                <strong>{voiceCopy.name}</strong>
+                <small>
+                  {voiceState?.supported
+                    ? (
+                        voiceState?.voiceName ||
+                        voiceCopy.ready
+                      )
+                    : voiceCopy.unsupported}
+                </small>
+              </span>
+
+              <button
+                type="button"
+                className={[
+                  "zero65-audio-switch",
+                  voiceState?.enabled
+                    ? "is-on"
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                disabled={!voiceState?.supported}
+                onClick={onToggleVoice}
+              >
+                {voiceState?.enabled
+                  ? voiceCopy.on
+                  : voiceCopy.off}
+              </button>
+            </div>
+
+            <button
+              type="button"
+              className="zero74-test-voice"
+              disabled={!voiceState?.supported}
+              onClick={() => {
+                gameSfx.soft();
+                onTestVoice();
+              }}
+            >
+              {voiceCopy.test}
+            </button>
           </div>
         </section>
       </main>
