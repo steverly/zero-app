@@ -10696,3 +10696,45 @@ small {
       scaleY(.48) !important;
   }
 }
+
+
+/* =========================================================
+   ZERO V7.3.1 — CLICKABLE PROPOSALS + HOSTILITY FAILSAFE
+   ========================================================= */
+
+.zero72-spontaneous,
+.zero72-spontaneous .reply-shell,
+.zero72-choice-row,
+.zero72-choice-row button {
+  pointer-events: auto !important;
+}
+
+.zero72-spontaneous {
+  position: relative !important;
+  z-index: 650 !important;
+}
+
+.zero72-spontaneous .reply-shell {
+  position: relative !important;
+  z-index: 651 !important;
+}
+
+.zero72-choice-row {
+  position: relative !important;
+  z-index: 900 !important;
+  isolation: isolate;
+  touch-action: manipulation;
+}
+
+.zero72-choice-row button {
+  position: relative !important;
+  z-index: 901 !important;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Make sure the visual Zero layer can never swallow these controls. */
+.zero-entity {
+  pointer-events: none !important;
+}

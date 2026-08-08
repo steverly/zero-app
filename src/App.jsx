@@ -65,6 +65,7 @@ import {
   finishReconciliation,
   departureLine,
   boundarySnarkLine,
+  mergeDisrespectSignal,
 } from "./zero-boundaries";
 import { loadLivingCore, saveLivingCore, recordLivingChat, recordLivingGame, chooseZeroImpulse, markImpulseShown, livingCoreLabel, getCareProgress, addCareXP, claimCareReward, getZeroWants } from "./zero-care";
 import "./zero-v5.css";
@@ -1676,12 +1677,20 @@ setFlyingId((prev) => prev + 1);
       zeroState,
       relationship: getServerRelationshipContext(relationship, selectedLanguage),
     });
+const modelDisrespect =
+  Number(data.signals?.disrespect || 0);
+
+const effectiveDisrespect =
+  mergeDisrespectSignal(
+    modelDisrespect,
+    clean
+  );
+
 const nextBoundary =
   updateBoundaryFromSignals(
     boundaryState,
     {
-      disrespect:
-        Number(data.signals?.disrespect || 0),
+      disrespect: effectiveDisrespect,
       interactionQuality:
         Number(data.signals?.interactionQuality || 0.4),
       humor:
@@ -1689,6 +1698,14 @@ const nextBoundary =
       userMessage: clean,
     }
   );
+
+console.log("ZERO_BOUNDARY", {
+  modelDisrespect,
+  effectiveDisrespect,
+  consecutive: nextBoundary.consecutive,
+  pressure: nextBoundary.pressure,
+  mode: nextBoundary.mode,
+});
 
 const justLeft =
   boundaryState.mode !== "away" &&
@@ -1701,7 +1718,7 @@ const rawReply =
 
 const hostileButStillTalking =
   !justLeft &&
-  Number(data.signals?.disrespect || 0) > 0.48;
+  effectiveDisrespect > 0.48;
 
 const collapsedReply =
   rawReply === "..." ||
@@ -1748,7 +1765,10 @@ setRelationship((previous) =>
               nextBoundary.consecutive
             )
           : data.reply,
-    signals: data.signals,
+    signals: {
+      ...data.signals,
+      disrespect: effectiveDisrespect,
+    },
     memoryCandidate: data.memoryCandidate,
     usedMemoryId: data.usedMemoryId,
     coreMultiplier: getCoreMultiplier(economy) * getWalletCoreMultiplier(wallet),

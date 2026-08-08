@@ -52,6 +52,60 @@ export function obviousApology(text = "") {
   return /(désol|desol|pardon|excuse|my bad|sorry|maaf|ampun)/i.test(t);
 }
 
+
+export function estimateLocalDisrespect(text = "") {
+  const raw = String(text || "").toLowerCase().trim();
+  if (!raw) return 0;
+
+  const t = raw
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[’']/g, "'")
+    .replace(/\s+/g, " ");
+
+  const strong = [
+    "ferme ta gueule","ftg","ta gueule","va te faire foutre",
+    "nique ta mere","ntm","fils de pute","fdp","sale pute",
+    "sale merde","grosse merde","pauvre merde","connard",
+    "connasse","encule","enculé","batard","sous merde",
+    "fuck you","shut the fuck up","stfu","piece of shit",
+    "motherfucker","asshole","dumbass",
+    "bangsat","kontol","ngentot","anjing lu","goblok lu","tolol lu"
+  ];
+
+  const medium = [
+    "t'es con","tes con","sale con","t'es debile","tes debile",
+    "t'es nul","tes nul","t'es eclate","tes eclate","t'es une merde",
+    "tu me casses les couilles","tu casses les couilles","tu fais chier",
+    "ferme la","degage","dégage","bouffon","clochard",
+    "you're stupid","youre stupid","you're dumb","youre dumb",
+    "you suck","you're trash","youre trash","you're useless",
+    "lu goblok","lu tolol","lu sampah"
+  ];
+
+  const has = (arr) => arr.some((x) =>
+    t.includes(
+      x.normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    )
+  );
+
+  if (has(strong)) return 0.94;
+  if (has(medium)) return 0.74;
+
+  if (/^(connard|connasse|fdp|batard|debile|merde|bouffon|asshole|dumbass|idiot|bangsat|kontol|goblok|tolol)[ !?.]*$/i.test(t)) {
+    return 0.76;
+  }
+
+  return 0;
+}
+
+export function mergeDisrespectSignal(modelDisrespect = 0, userMessage = "") {
+  return Math.max(
+    clamp(modelDisrespect),
+    estimateLocalDisrespect(userMessage)
+  );
+}
+
 function strongConfirmation(text = "") {
   const t =
     String(text)
