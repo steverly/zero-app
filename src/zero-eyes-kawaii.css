@@ -1,0 +1,400 @@
+/* =========================================================
+   ZERO EYES — kawaii, cool, lisibles, sans coupure
+   ========================================================= */
+
+.center-stage::before,
+.center-stage::after {
+  display: none !important;
+}
+
+.zero-eyes {
+  --eye-width: 54px;
+  --eye-gap: 52px;
+  --stroke-width: 31px;
+  --stroke-height: 8px;
+  --stroke-radius: 999px;
+  --eye-color: rgba(236, 229, 218, 0.78);
+
+  --left-a-x: 0px;
+  --left-a-y: 0px;
+  --left-a-r: -24deg;
+  --left-b-x: 19px;
+  --left-b-y: 0px;
+  --left-b-r: 24deg;
+
+  --right-a-x: 0px;
+  --right-a-y: 0px;
+  --right-a-r: -24deg;
+  --right-b-x: 19px;
+  --right-b-y: 0px;
+  --right-b-r: 24deg;
+
+  position: absolute;
+  top: clamp(92px, 18vh, 168px);
+  left: 50%;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--eye-gap);
+  width: max-content;
+  transform: translateX(-50%);
+  pointer-events: none;
+  opacity: 0.92;
+  animation: zero-eyes-breathe 5.8s ease-in-out infinite;
+}
+
+.zero-eye {
+  position: relative;
+  width: var(--eye-width);
+  height: 42px;
+  display: block;
+}
+
+.zero-eye-stroke {
+  position: absolute;
+  top: 16px;
+  left: 1px;
+  width: var(--stroke-width);
+  height: var(--stroke-height);
+  border-radius: var(--stroke-radius);
+  background: var(--eye-color);
+  box-shadow:
+    0 0 8px rgba(255, 255, 255, 0.025),
+    0 2px 5px rgba(0, 0, 0, 0.22);
+  transform-origin: center;
+  transition:
+    transform 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    height 520ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 380ms ease,
+    background 380ms ease;
+}
+
+.zero-eye--left .zero-eye-stroke--a {
+  transform:
+    translate(var(--left-a-x), var(--left-a-y))
+    rotate(var(--left-a-r));
+}
+
+.zero-eye--left .zero-eye-stroke--b {
+  transform:
+    translate(var(--left-b-x), var(--left-b-y))
+    rotate(var(--left-b-r));
+}
+
+.zero-eye--right .zero-eye-stroke--a {
+  transform:
+    translate(var(--right-a-x), var(--right-a-y))
+    rotate(var(--right-a-r));
+}
+
+.zero-eye--right .zero-eye-stroke--b {
+  transform:
+    translate(var(--right-b-x), var(--right-b-y))
+    rotate(var(--right-b-r));
+}
+
+@keyframes zero-eyes-breathe {
+  0%,
+  100% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+
+  48% {
+    transform: translateX(-50%) translateY(-1px) scale(1.01);
+  }
+
+  51% {
+    transform: translateX(-50%) translateY(1px) scaleY(0.1);
+  }
+
+  55% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+/* ---------------------------------------------------------
+   IDLE / REPLYING : ^^ doux
+   --------------------------------------------------------- */
+
+.zero-eyes--idle,
+.zero-eyes--calm,
+.zero-eyes--replying {
+  --left-a-r: -24deg;
+  --left-b-r: 24deg;
+  --right-a-r: -24deg;
+  --right-b-r: 24deg;
+  --left-a-y: 2px;
+  --left-b-y: 2px;
+  --right-a-y: 2px;
+  --right-b-y: 2px;
+}
+
+/* ---------------------------------------------------------
+   THINKING : -- un peu relevés
+   --------------------------------------------------------- */
+
+.zero-eyes--thinking,
+.zero-eyes[data-action="think"] {
+  --stroke-width: 34px;
+  --left-a-r: 0deg;
+  --left-b-r: 0deg;
+  --right-a-r: 0deg;
+  --right-b-r: 0deg;
+  --left-a-x: 5px;
+  --left-b-x: 5px;
+  --right-a-x: 5px;
+  --right-b-x: 5px;
+  --left-a-y: -3px;
+  --left-b-y: -3px;
+  --right-a-y: -3px;
+  --right-b-y: -3px;
+}
+
+.zero-eyes--thinking .zero-eye-stroke--b,
+.zero-eyes[data-action="think"] .zero-eye-stroke--b {
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------
+   WARM : ^^ plus arrondis
+   --------------------------------------------------------- */
+
+.zero-eyes--warm,
+.zero-eyes[data-action="soften"] {
+  --left-a-r: -31deg;
+  --left-b-r: 31deg;
+  --right-a-r: -31deg;
+  --right-b-r: 31deg;
+  --left-a-y: 4px;
+  --left-b-y: 4px;
+  --right-a-y: 4px;
+  --right-b-y: 4px;
+  --eye-color: rgba(244, 235, 221, 0.86);
+}
+
+/* ---------------------------------------------------------
+   FUNNY / LAUGH : >< mais arrondi
+   --------------------------------------------------------- */
+
+.zero-eyes--funny,
+.zero-eyes[data-action="laugh"] {
+  --left-a-r: 29deg;
+  --left-b-r: -29deg;
+  --right-a-r: -29deg;
+  --right-b-r: 29deg;
+  --left-a-y: 3px;
+  --left-b-y: 3px;
+  --right-a-y: 3px;
+  --right-b-y: 3px;
+}
+
+.zero-eyes[data-action="laugh"] {
+  animation: zero-eyes-laugh 560ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes zero-eyes-laugh {
+  0% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+
+  38% {
+    transform: translateX(-50%) translateY(-7px) scale(1.06);
+  }
+
+  72% {
+    transform: translateX(-50%) translateY(-2px) scale(1.02);
+  }
+
+  100% {
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+/* ---------------------------------------------------------
+   ANNOYED / SHARP / REFUSE : \/
+   --------------------------------------------------------- */
+
+.zero-eyes--annoyed,
+.zero-eyes--sharp,
+.zero-eyes[data-action="refuse"] {
+  --left-a-r: 20deg;
+  --left-b-r: 20deg;
+  --right-a-r: -20deg;
+  --right-b-r: -20deg;
+  --left-a-x: 6px;
+  --left-b-x: 6px;
+  --right-a-x: 6px;
+  --right-b-x: 6px;
+  --left-a-y: 2px;
+  --left-b-y: 2px;
+  --right-a-y: 2px;
+  --right-b-y: 2px;
+}
+
+.zero-eyes--annoyed .zero-eye-stroke--b,
+.zero-eyes--sharp .zero-eye-stroke--b,
+.zero-eyes[data-action="refuse"] .zero-eye-stroke--b {
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------
+   HYPED / SURPRISED / EXCITED : petits O kawaii
+   --------------------------------------------------------- */
+
+.zero-eyes--hyped,
+.zero-eyes[data-action="surprised"],
+.zero-eyes[data-action="excited"] {
+  --stroke-width: 29px;
+  --stroke-height: 29px;
+  --stroke-radius: 50%;
+  --left-a-r: 0deg;
+  --left-b-r: 0deg;
+  --right-a-r: 0deg;
+  --right-b-r: 0deg;
+  --left-a-x: 11px;
+  --left-b-x: 11px;
+  --right-a-x: 11px;
+  --right-b-x: 11px;
+  --left-a-y: -3px;
+  --left-b-y: -3px;
+  --right-a-y: -3px;
+  --right-b-y: -3px;
+}
+
+.zero-eyes--hyped .zero-eye-stroke--b,
+.zero-eyes[data-action="surprised"] .zero-eye-stroke--b,
+.zero-eyes[data-action="excited"] .zero-eye-stroke--b {
+  opacity: 0;
+}
+
+.zero-eyes[data-action="surprised"],
+.zero-eyes[data-action="excited"] {
+  animation: zero-eyes-pop 360ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes zero-eyes-pop {
+  0% {
+    transform: translateX(-50%) scale(0.72);
+    opacity: 0.45;
+  }
+
+  72% {
+    transform: translateX(-50%) scale(1.08);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 0.92;
+  }
+}
+
+/* ---------------------------------------------------------
+   STARE : petits points fixes
+   --------------------------------------------------------- */
+
+.zero-eyes[data-action="stare"] {
+  --stroke-width: 15px;
+  --stroke-height: 15px;
+  --stroke-radius: 50%;
+  --left-a-r: 0deg;
+  --left-b-r: 0deg;
+  --right-a-r: 0deg;
+  --right-b-r: 0deg;
+  --left-a-x: 18px;
+  --left-b-x: 18px;
+  --right-a-x: 18px;
+  --right-b-x: 18px;
+  --left-a-y: 4px;
+  --left-b-y: 4px;
+  --right-a-y: 4px;
+  --right-b-y: 4px;
+  animation-play-state: paused;
+}
+
+.zero-eyes[data-action="stare"] .zero-eye-stroke--b {
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------
+   LOOK AWAY : petits points déplacés
+   --------------------------------------------------------- */
+
+.zero-eyes[data-action="lookAway"] {
+  --stroke-width: 14px;
+  --stroke-height: 14px;
+  --stroke-radius: 50%;
+  --left-a-r: 0deg;
+  --left-b-r: 0deg;
+  --right-a-r: 0deg;
+  --right-b-r: 0deg;
+  --left-a-x: 24px;
+  --left-b-x: 24px;
+  --right-a-x: 24px;
+  --right-b-x: 24px;
+  --left-a-y: 4px;
+  --left-b-y: 4px;
+  --right-a-y: 4px;
+  --right-b-y: 4px;
+  opacity: 0.58;
+}
+
+.zero-eyes[data-action="lookAway"] .zero-eye-stroke--b {
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------
+   SIGH / ERROR : -- vers le bas
+   --------------------------------------------------------- */
+
+.zero-eyes[data-action="sigh"],
+.zero-eyes--error {
+  --stroke-width: 35px;
+  --left-a-r: 0deg;
+  --left-b-r: 0deg;
+  --right-a-r: 0deg;
+  --right-b-r: 0deg;
+  --left-a-x: 5px;
+  --left-b-x: 5px;
+  --right-a-x: 5px;
+  --right-b-x: 5px;
+  --left-a-y: 7px;
+  --left-b-y: 7px;
+  --right-a-y: 7px;
+  --right-b-y: 7px;
+  opacity: 0.48;
+}
+
+.zero-eyes[data-action="sigh"] .zero-eye-stroke--b,
+.zero-eyes--error .zero-eye-stroke--b {
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------
+   Mobile
+   --------------------------------------------------------- */
+
+@media (max-width: 640px) {
+  .zero-eyes {
+    --eye-width: 48px;
+    --eye-gap: 40px;
+    --stroke-width: 27px;
+    top: clamp(82px, 17vh, 142px);
+  }
+}
+
+@media (max-height: 650px) {
+  .zero-eyes {
+    top: 54px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zero-eyes,
+  .zero-eye-stroke {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}

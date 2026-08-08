@@ -1,6 +1,7 @@
 .zero-entity {
   --zero-look-x: 0px;
   --zero-look-y: 0px;
+
   position: absolute;
   inset: 0;
   z-index: 9;
@@ -11,10 +12,17 @@
 .zero-entity-motion {
   position: absolute;
   inset: 0;
-  transform: translate(var(--zero-look-x), var(--zero-look-y));
+
+  transform:
+    translate(
+      var(--zero-look-x),
+      var(--zero-look-y)
+    );
+
   transition:
     transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
     filter 300ms ease;
+
   will-change: transform;
 }
 
@@ -22,10 +30,14 @@
   position: absolute;
   top: clamp(34px, 7vh, 80px);
   left: 50%;
+
   width: clamp(270px, 38vw, 520px);
   height: clamp(190px, 29vw, 360px);
+
   border-radius: 50%;
+
   transform: translateX(-50%);
+
   background:
     radial-gradient(
       ellipse at center,
@@ -33,72 +45,116 @@
       rgba(245, 238, 226, 0.015) 25%,
       transparent 68%
     );
+
   filter: blur(14px);
   opacity: 0.72;
-  animation: zero-presence-breathe 7.2s ease-in-out infinite;
+
+  animation:
+    zero-presence-breathe
+    7.2s
+    ease-in-out
+    infinite;
 }
 
 .zero-presence-core {
   position: absolute;
   top: clamp(88px, 17vh, 158px);
   left: 50%;
+
   width: 150px;
   height: 64px;
+
   border-radius: 50%;
+
   transform: translateX(-50%);
+
   background:
     radial-gradient(
       ellipse at center,
       rgba(255, 248, 236, 0.027),
       transparent 72%
     );
+
   filter: blur(10px);
   opacity: 0.55;
-  animation: zero-core-breathe 4.8s ease-in-out infinite;
+
+  animation:
+    zero-core-breathe
+    4.8s
+    ease-in-out
+    infinite;
 }
 
 @keyframes zero-presence-breathe {
-  0%, 100% {
-    transform: translateX(-50%) scale(0.96);
+  0%,
+  100% {
+    transform:
+      translateX(-50%)
+      scale(0.96);
+
     opacity: 0.55;
   }
+
   50% {
-    transform: translateX(-50%) scale(1.045);
+    transform:
+      translateX(-50%)
+      scale(1.045);
+
     opacity: 0.82;
   }
 }
 
 @keyframes zero-core-breathe {
-  0%, 100% {
-    transform: translateX(-50%) scaleX(0.94) scaleY(0.86);
+  0%,
+  100% {
+    transform:
+      translateX(-50%)
+      scaleX(0.94)
+      scaleY(0.86);
+
     opacity: 0.38;
   }
+
   50% {
-    transform: translateX(-50%) scaleX(1.08) scaleY(1);
+    transform:
+      translateX(-50%)
+      scaleX(1.08)
+      scaleY(1);
+
     opacity: 0.7;
   }
 }
 
-.zero-entity.is-sleeping .zero-entity-motion {
+.zero-entity.is-sleeping
+.zero-entity-motion {
   opacity: 0;
+
   transform:
     translate(
       var(--zero-look-x),
       calc(var(--zero-look-y) + 13px)
     )
     scale(0.78);
+
   filter: blur(8px);
 }
 
-.zero-entity.is-awake .zero-entity-motion {
+.zero-entity.is-awake
+.zero-entity-motion {
   opacity: 1;
-  animation: zero-awake 1100ms cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  animation:
+    zero-awake
+    1100ms
+    cubic-bezier(0.16, 1, 0.3, 1)
+    both;
 }
 
 @keyframes zero-awake {
   0% {
     opacity: 0;
     filter: blur(9px);
+
     transform:
       translate(
         var(--zero-look-x),
@@ -106,10 +162,15 @@
       )
       scale(0.72);
   }
-  35% { opacity: 0.5; }
+
+  35% {
+    opacity: 0.5;
+  }
+
   72% {
     opacity: 1;
     filter: blur(0);
+
     transform:
       translate(
         var(--zero-look-x),
@@ -117,9 +178,11 @@
       )
       scale(1.035);
   }
+
   100% {
     opacity: 1;
     filter: blur(0);
+
     transform:
       translate(
         var(--zero-look-x),
@@ -133,119 +196,218 @@
   position: absolute;
   top: clamp(146px, 26vh, 235px);
   left: 50%;
+
   display: flex;
   gap: 7px;
+
   transform: translateX(-50%);
   opacity: 0;
 }
 
-.zero-entity.is-awake .zero-presence-wake {
-  animation: zero-wake-dots-container 1500ms ease-out 180ms both;
+.zero-entity.is-awake
+.zero-presence-wake {
+  animation:
+    zero-wake-dots-container
+    1500ms
+    ease-out
+    180ms
+    both;
 }
 
 .zero-presence-wake i {
   width: 5px;
   height: 5px;
+
   border-radius: 50%;
-  background: rgba(244, 237, 226, 0.38);
+
+  background:
+    rgba(244, 237, 226, 0.38);
+
   opacity: 0;
-  animation: zero-wake-dot 880ms ease-out both;
+
+  animation:
+    zero-wake-dot
+    880ms
+    ease-out
+    both;
 }
 
-.zero-presence-wake i:nth-child(1) { animation-delay: 380ms; }
-.zero-presence-wake i:nth-child(2) { animation-delay: 500ms; }
-.zero-presence-wake i:nth-child(3) { animation-delay: 620ms; }
+.zero-presence-wake i:nth-child(1) {
+  animation-delay: 380ms;
+}
+
+.zero-presence-wake i:nth-child(2) {
+  animation-delay: 500ms;
+}
+
+.zero-presence-wake i:nth-child(3) {
+  animation-delay: 620ms;
+}
 
 @keyframes zero-wake-dots-container {
-  0%, 78% { opacity: 1; }
-  100% { opacity: 0; }
+  0%,
+  78% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+  }
 }
 
 @keyframes zero-wake-dot {
   0% {
     opacity: 0;
-    transform: translateY(5px) scale(0.5);
+
+    transform:
+      translateY(5px)
+      scale(0.5);
   }
+
   35% {
     opacity: 0.8;
-    transform: translateY(0) scale(1);
+
+    transform:
+      translateY(0)
+      scale(1);
   }
+
   100% {
     opacity: 0;
-    transform: translateY(-5px) scale(0.75);
+
+    transform:
+      translateY(-5px)
+      scale(0.75);
   }
 }
 
-.zero-entity.is-near .zero-presence-field {
+.zero-entity.is-near
+.zero-presence-field {
   opacity: 0.92;
-  transform: translateX(-50%) scale(1.035);
+
+  transform:
+    translateX(-50%)
+    scale(1.035);
+
   transition:
     opacity 220ms ease,
-    transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1);
+    transform 420ms
+      cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-.zero-entity.is-near .zero-entity-motion {
+.zero-entity.is-near
+.zero-entity-motion {
   transition-duration: 160ms;
 }
 
-.zero-entity.is-listening .zero-entity-motion {
+.zero-entity.is-listening
+.zero-entity-motion {
   filter: brightness(1.04);
 }
 
-.zero-entity.is-listening .zero-presence-core {
+.zero-entity.is-listening
+.zero-presence-core {
   opacity: 0.76;
   animation-duration: 3.2s;
 }
 
-.zero-entity.is-thinking .zero-presence-field {
+.zero-entity.is-thinking
+.zero-presence-field {
   animation-duration: 3.4s;
   opacity: 0.88;
 }
 
-.zero-entity.is-thinking .zero-presence-core {
-  animation: zero-thinking-core 1.6s ease-in-out infinite;
+.zero-entity.is-thinking
+.zero-presence-core {
+  animation:
+    zero-thinking-core
+    1.6s
+    ease-in-out
+    infinite;
 }
 
 @keyframes zero-thinking-core {
-  0%, 100% {
-    transform: translateX(-50%) scale(0.82);
+  0%,
+  100% {
+    transform:
+      translateX(-50%)
+      scale(0.82);
+
     opacity: 0.35;
   }
+
   50% {
-    transform: translateX(-50%) scale(1.14);
+    transform:
+      translateX(-50%)
+      scale(1.14);
+
     opacity: 0.78;
   }
 }
 
-.zero-entity.has-replied .zero-presence-field {
+/* Message / jeu = petite impulsion vers le Core.
+   Aucune position center-stage ici. */
+
+.zero-feed-pulse {
+  position: absolute;
+  z-index: 4;
+
+  top: clamp(105px, 18vh, 170px);
+  left: 50%;
+
+  width: 14px;
+  height: 14px;
+
+  border-radius: 50%;
+
+  background:
+    rgba(245, 239, 228, 0.13);
+
+  transform:
+    translate(-50%, 42px)
+    scale(0.2);
+
+  opacity: 0;
+
   animation:
-    zero-reply-presence-pop 650ms cubic-bezier(0.16, 1, 0.3, 1),
-    zero-presence-breathe 7.2s ease-in-out 650ms infinite;
+    zero-feed
+    900ms
+    cubic-bezier(0.16, 1, 0.3, 1)
+    both;
 }
 
-@keyframes zero-reply-presence-pop {
+@keyframes zero-feed {
   0% {
-    transform: translateX(-50%) scale(0.88);
-    opacity: 0.35;
+    opacity: 0;
+
+    transform:
+      translate(-50%, 42px)
+      scale(0.2);
   }
-  45% {
-    transform: translateX(-50%) scale(1.08);
-    opacity: 0.95;
-  }
-  100% {
-    transform: translateX(-50%) scale(1);
+
+  28% {
     opacity: 0.72;
   }
-}
 
-.center-stage {
-  z-index: 15;
-}
+  68% {
+    opacity: 0.82;
 
-.reply-shell,
-.reply-text {
-  position: relative;
-  z-index: 15;
+    transform:
+      translate(-50%, 0)
+      scale(0.82);
+
+    box-shadow:
+      0 0 24px
+      rgba(245,239,228,0.08);
+  }
+
+  100% {
+    opacity: 0;
+
+    transform:
+      translate(-50%, -4px)
+      scale(1.65);
+  }
 }
 
 @media (max-width: 640px) {
@@ -287,5 +449,299 @@
   .zero-entity *::after {
     animation-duration: 1ms !important;
     transition-duration: 1ms !important;
+  }
+}
+
+
+/* =========================================================
+   ZERO V6.1 — IDLE LIFE
+   Zero fait sa vie sans requête IA.
+   ========================================================= */
+
+.zero-entity-motion {
+  transition:
+    transform 760ms cubic-bezier(0.16, 1, 0.3, 1),
+    filter 300ms ease;
+}
+
+.zero-entity.is-life-roam
+.zero-entity-motion {
+  animation:
+    zero-life-roam
+    2.7s
+    ease-in-out
+    both;
+}
+
+.zero-entity.is-life-peek
+.zero-entity-motion {
+  animation:
+    zero-life-peek
+    2.3s
+    cubic-bezier(0.16, 1, 0.3, 1)
+    both;
+}
+
+.zero-entity.is-life-float
+.zero-entity-motion {
+  animation:
+    zero-life-float
+    2.7s
+    ease-in-out
+    both;
+}
+
+.zero-entity.is-life-nap
+.zero-entity-motion {
+  animation:
+    zero-life-nap-body
+    3.9s
+    ease-in-out
+    both;
+}
+
+.zero-entity.is-life-nap
+.zero-eye-stroke {
+  animation:
+    zero-life-nap-eye
+    3.9s
+    ease-in-out
+    both !important;
+}
+
+.zero-entity.is-life-corePlay
+.zero-presence-core {
+  animation:
+    zero-life-core-react
+    1.1s
+    ease-in-out
+    infinite;
+}
+
+.zero-entity.is-life-inspect
+.zero-entity-motion {
+  filter:
+    brightness(1.07)
+    drop-shadow(
+      0 0 10px
+      rgba(114,223,218,0.045)
+    );
+}
+
+@keyframes zero-life-roam {
+  0%,
+  100% {
+    rotate: 0deg;
+  }
+
+  45% {
+    rotate: -1.2deg;
+  }
+
+  70% {
+    rotate: 0.7deg;
+  }
+}
+
+@keyframes zero-life-peek {
+  0% {
+    scale: 0.96;
+  }
+
+  42% {
+    scale: 1.045;
+  }
+
+  100% {
+    scale: 1;
+  }
+}
+
+@keyframes zero-life-float {
+  0%,
+  100% {
+    scale: 1;
+  }
+
+  50% {
+    scale: 0.985;
+  }
+}
+
+@keyframes zero-life-nap-body {
+  0% {
+    translate: 0 0;
+  }
+
+  20%,
+  78% {
+    translate: 0 5px;
+  }
+
+  100% {
+    translate: 0 0;
+  }
+}
+
+@keyframes zero-life-nap-eye {
+  0%,
+  12% {
+    scale: 1 1;
+  }
+
+  25%,
+  76% {
+    scale: 1 0.16;
+    opacity: 0.62;
+  }
+
+  100% {
+    scale: 1 1;
+  }
+}
+
+@keyframes zero-life-core-react {
+  0%,
+  100% {
+    opacity: 0.34;
+    scale: 0.9;
+  }
+
+  50% {
+    opacity: 0.82;
+    scale: 1.12;
+  }
+}
+
+.zero-life-coretoy {
+  position: absolute;
+  z-index: 10;
+
+  left: 50%;
+  top: clamp(93px, 18vh, 168px);
+
+  width: 210px;
+  height: 90px;
+
+  transform: translateX(-50%);
+
+  pointer-events: none;
+}
+
+.zero-life-coretoy i {
+  position: absolute;
+
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background:
+    rgba(167,151,255,0.8);
+
+  box-shadow:
+    0 0 12px
+    rgba(155,140,255,0.23);
+
+  animation:
+    zero-life-toy
+    1.65s
+    ease-in-out
+    infinite;
+}
+
+.zero-life-coretoy i:first-child {
+  left: 12%;
+  top: 48%;
+}
+
+.zero-life-coretoy i:last-child {
+  right: 12%;
+  top: 48%;
+
+  background:
+    rgba(114,223,218,0.78);
+
+  box-shadow:
+    0 0 12px
+    rgba(114,223,218,0.19);
+
+  animation-delay: -0.82s;
+}
+
+@keyframes zero-life-toy {
+  0%,
+  100% {
+    transform:
+      translateY(5px)
+      scale(0.7);
+    opacity: 0.32;
+  }
+
+  50% {
+    transform:
+      translateY(-9px)
+      scale(1.1);
+    opacity: 0.95;
+  }
+}
+
+.zero-life-scan {
+  position: absolute;
+  z-index: 10;
+
+  left: 50%;
+  top: clamp(88px, 17vh, 158px);
+
+  width: 185px;
+  height: 70px;
+
+  transform: translateX(-50%);
+
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.zero-life-scan i {
+  position: absolute;
+
+  left: 8px;
+  right: 8px;
+  top: 0;
+
+  height: 1px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(114,223,218,0.32),
+      transparent
+    );
+
+  animation:
+    zero-life-scan-line
+    1.45s
+    ease-in-out
+    infinite;
+}
+
+@keyframes zero-life-scan-line {
+  0% {
+    opacity: 0;
+    transform: translateY(0);
+  }
+
+  18% {
+    opacity: 0.7;
+  }
+
+  82% {
+    opacity: 0.22;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(66px);
   }
 }

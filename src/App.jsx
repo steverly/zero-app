@@ -3,17 +3,63 @@ import { AnimatePresence, motion } from "framer-motion";
 import { initAdMob, showRewardedAd } from "./admob";
 import "./styles.css";
 import { Purchases } from '@revenuecat/purchases-capacitor';
-import ZeroEyes from "./ZeroEyes";
-import ZeroEmotionFX from "./ZeroEmotionFX";
-import ZeroChallenge from "./ZeroChallenge";
 import ZeroEntity from "./ZeroEntity";
+import {
+  loadRelationship,
+  saveRelationship,
+  evolveRelationship,
+  evolveRelationshipFromGame,
+  getServerRelationshipContext,
+} from "./zero-relationship";
 
-const MAX_CHARS = 2000;
-const FREE_MESSAGES_START = 6;
-const REWARDED_MESSAGES_GAIN = 10;
-const MEMORY_TIMEOUT_MS = 20 * 60 * 1000;
-const MAX_MEMORY_MESSAGES = 20;
-const API_BASE = "https://zero-app-ebsv.onrender.com";
+import { ZERO_CONFIG } from "./zero-config";
+
+import {
+  loadEconomy,
+  saveEconomy,
+  consumeChatTurn,
+  canWatchRewarded,
+  grantRewardedBundle,
+  getCoreMultiplier,
+  getCoreBoostRemainingMs,
+  shouldHighlightRewarded,
+  markEarlyOfferSeen,
+} from "./zero-economy";
+
+import ZeroCoreButton from "./ZeroCoreButton";
+import ZeroCorePanel from "./ZeroCorePanel";
+import ZeroArcade from "./ZeroArcade";
+import ZeroShop from "./ZeroShop";
+import ZeroWalletPanel from "./ZeroWalletPanel";
+import ZeroSettings from "./ZeroSettings";
+import ZeroCosmeticsLayer, { cosmeticClassNames } from "./ZeroCosmeticsLayer";
+
+import {
+  loadWallet,
+  saveWallet,
+  rewardGameCoins,
+  claimCoreStageReward,
+  getCoreStageIndex,
+  addPurchasedCoins,
+  getWalletCoreMultiplier,
+  canClaimCoinReward,
+  getCoinRewardedToday,
+  grantCoinReward,
+} from "./zero-wallet";
+
+import {
+  loadZeroLanguage,
+  saveZeroLanguage,
+} from "./zero-language";
+
+import { gameSfx } from "./zero-game-sfx";
+import { getZeroCopy } from "./zero-i18n";
+import "./zero-v5.css";
+
+const MAX_CHARS = ZERO_CONFIG.chat.maxUserChars;
+const MEMORY_TIMEOUT_MS = ZERO_CONFIG.chat.recentHistoryMaxAgeMs;
+const MAX_MEMORY_MESSAGES = ZERO_CONFIG.chat.recentHistoryMessages;
+const API_BASE = ZERO_CONFIG.apiBase;
 
 
 const DEFAULT_ZERO_STATE = {
@@ -56,22 +102,6 @@ const playSound = (frequency, duration, volume = 0.15, type = "sine") => {
   }
 };
 
-function detectLanguage(text) {
-  const t = text.toLowerCase();
-
-  // Bahasa Indonesia
-  if (/\b(kamu|aku|gak|nggak|ga|udah|sudah|banget|kok|lah|deh|dong|sih|wkwk|wkwkwk|iya|ya|lagi|apa|baik|halo|selamat|terima|kasih|tolong|bisa|ngapain|kenapa|gimana)\b/.test(t)) {
-    return "id";
-  }
-
-  // English
-  if (/\b(the|and|what|why|how|are|is|yeah|nah|bro|dude|thanks|thank|please|hello|hi|good|bad|okay|ok)\b/.test(t)) {
-    return "en";
-  }
-
-  return "fr";
-}
-
 const sfx = {
   send: () => playSound(820, 0.08, 0.12, "sine"),
   arrive: () => playSound(620, 0.14, 0.1, "triangle"),
@@ -107,7 +137,8 @@ async function sendToBot(payload) {
     reply:
       typeof data?.reply === "string" && data.reply.trim()
         ? data.reply.trim()
-        : "Là j’ai pas assez pour capter",
+        : "...",
+
     emotion: data?.emotion || {
       energy: 0.55,
       warmth: 0.55,
@@ -116,39 +147,50 @@ async function sendToBot(payload) {
       confidence: 0.78,
       surprise: 0,
     },
-state: data?.state || null,
-action: typeof data?.action === "string" ? data.action : "none",
-followUp: {
-  shouldSend: data?.followUp?.shouldSend === true,
-  message:
-    typeof data?.followUp?.message === "string"
-      ? data.followUp.message.trim()
-      : "",
-  delayMs:
-    typeof data?.followUp?.delayMs === "number"
-      ? data.followUp.delayMs
-      : 1400,
-},
+
+    state: data?.state || null,
+    action: typeof data?.action === "string" ? data.action : "none",
+
+    followUp: {
+      shouldSend: data?.followUp?.shouldSend === true,
+      message:
+        typeof data?.followUp?.message === "string"
+          ? data.followUp.message.trim()
+          : "",
+      delayMs:
+        typeof data?.followUp?.delayMs === "number"
+          ? data.followUp.delayMs
+          : 1200,
+    },
+
+    signals: data?.signals || {},
+    memoryCandidate: data?.memoryCandidate || null,
+    usedMemoryId:
+      typeof data?.usedMemoryId === "string"
+        ? data.usedMemoryId
+        : "",
+
+    local: data?.debug?.local === true,
   };
 }
 
-async function getPaywallLine(payload) {
-  const data = await apiPost("/api/paywall", payload);
+// Paywall / upgrade = texte local.
+// Aucune raison de payer des tokens OpenAI pour afficher un paywall.
+async function getPaywallLine(language = "fr") {
+  const copy = getZeroCopy(language);
+  const lines = copy.monetization.paywallLines;
+
   return {
-    line:
-      typeof data?.line === "string" && data.line.trim()
-        ? data.line.trim()
-        : "T’as vidé. Regarde une pub ou prends l’illimité.",
+    line: lines[Math.floor(Math.random() * lines.length)],
   };
 }
 
-async function getUpgradeLine(payload) {
-  const data = await apiPost("/api/upgrade", payload);
+async function getUpgradeLine(language = "fr") {
+  const copy = getZeroCopy(language);
+  const lines = copy.monetization.premiumLines;
+
   return {
-    line:
-      typeof data?.line === "string" && data.line.trim()
-        ? data.line.trim()
-        : "Illimité, sans pub. Là tu parles tranquille.",
+    line: lines[Math.floor(Math.random() * lines.length)],
   };
 }
 
@@ -266,41 +308,140 @@ function FlyingMessage({ text, id }) {
   );
 }
 
-function CenterReply({ loading, reply }) {
+function CenterReply({
+  loading,
+  reply,
+  action = "none",
+  mood = "idle",
+  emotion,
+  language = "fr",
+}) {
   useEffect(() => {
     if (reply && !loading) {
       sfx.arrive();
     }
   }, [reply, loading]);
 
+  const humor = Number(emotion?.humor || 0);
+  const surprise = Number(emotion?.surprise || 0);
+  const annoyance = Number(emotion?.annoyance || 0);
+  const warmth = Number(emotion?.warmth || 0);
+  const confidence = Number(emotion?.confidence || 0.78);
+
+  // V6.1 : l'effet ne dépend plus uniquement de `action`.
+  // Les émotions moyennes donnent aussi un feedback visible,
+  // donc Zero n'a plus l'air statique 90% du temps.
+  const expression =
+    action === "laugh" || humor > 0.52
+      ? "laugh"
+      : action === "surprised" || surprise > 0.48
+        ? "pop"
+        : action === "refuse" || annoyance > 0.56
+          ? "sharp"
+          : action === "soften" || warmth > 0.64
+            ? "soft"
+            : action === "excited" ||
+              (confidence > 0.88 && humor > 0.28)
+              ? "hype"
+              : action === "think"
+                ? "think"
+                : confidence > 0.84 &&
+                  warmth < 0.52 &&
+                  humor < 0.3
+                  ? "dry"
+                  : surprise > 0.3
+                    ? "glitch"
+                    : "normal";
+
   return (
-    <div className="center-stage">
+    <div
+      className={`center-stage zero-reply-expression zero-reply-${expression}`}
+      data-reply-mood={mood}
+    >
       <AnimatePresence mode="wait">
         {loading ? (
           <motion.div
             key="loading"
             className="reply-shell"
-            initial={{ opacity: 0, y: 20, scale: 0.96 }}
+            initial={{ opacity: 0, y: 18, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -12, scale: 0.98 }}
-            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            exit={{ opacity: 0, y: -10, scale: 0.98 }}
+            transition={{
+              duration: 0.3,
+              ease: [0.16, 1, 0.3, 1],
+            }}
           >
             <LoaderDots />
           </motion.div>
         ) : (
           <motion.div
-            key={reply || "empty"}
+            key={`${reply || "empty"}-${expression}`}
             className="reply-shell"
-            initial={{ opacity: 0, y: 24, scale: 0.94 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -16, scale: 0.96 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            initial={
+              expression === "pop"
+                ? { opacity: 0, scale: 0.72, y: 8 }
+                : expression === "sharp"
+                  ? { opacity: 0, x: -8, scaleX: 0.94 }
+                  : expression === "laugh"
+                    ? { opacity: 0, y: 12, rotate: -1.2 }
+                    : expression === "dry"
+                      ? { opacity: 0, y: 4, scaleX: 1.04 }
+                      : expression === "glitch"
+                        ? { opacity: 0, x: 5, scale: 0.98 }
+                        : { opacity: 0, y: 20, scale: 0.95 }
+            }
+            animate={
+              expression === "hype"
+                ? {
+                    opacity: 1,
+                    y: [0, -5, 0],
+                    scale: [1, 1.035, 1],
+                  }
+                : expression === "laugh"
+                  ? {
+                      opacity: 1,
+                      y: [0, -4, 1, 0],
+                      rotate: [0, -0.7, 0.6, 0],
+                    }
+                  : expression === "glitch"
+                    ? {
+                        opacity: 1,
+                        x: [0, -2, 2, 0],
+                        scale: [1, 1.01, 0.995, 1],
+                      }
+                    : { opacity: 1, y: 0, x: 0, scale: 1, rotate: 0 }
+            }
+            exit={{ opacity: 0, y: -12, scale: 0.97 }}
+            transition={{
+              duration:
+                expression === "hype" || expression === "laugh"
+                  ? 0.48
+                  : 0.38,
+              ease: [0.16, 1, 0.3, 1],
+            }}
           >
             <div className="reply-text">
               {reply ? (
-                <TypewriterText text={reply} />
+                <TypewriterText
+                  text={reply}
+                  speed={
+                    expression === "sharp"
+                      ? 8
+                      : expression === "hype"
+                        ? 11
+                        : expression === "soft"
+                          ? 18
+                          : expression === "dry"
+                            ? 10
+                            : expression === "glitch"
+                              ? 9
+                              : 14
+                  }
+                />
               ) : (
-                <span className="reply-placeholder">Parle à Zero</span>
+                <span className="reply-placeholder">
+                  {uiCopy(language).emptyReply}
+                </span>
               )}
             </div>
           </motion.div>
@@ -310,6 +451,37 @@ function CenterReply({ loading, reply }) {
   );
 }
 
+const UI_COPY = {
+  fr: {
+    placeholder: "Sois direct.",
+    send: "Envoyer",
+    unlimited: "illimité",
+    messages: "messages",
+    noMessages: "Plus de messages",
+    emptyReply: "Parle à Zero",
+  },
+  en: {
+    placeholder: "Say it.",
+    send: "Send",
+    unlimited: "unlimited",
+    messages: "messages",
+    noMessages: "No messages left",
+    emptyReply: "Talk to Zero",
+  },
+  id: {
+    placeholder: "Bilang aja.",
+    send: "Kirim",
+    unlimited: "tanpa batas",
+    messages: "pesan",
+    noMessages: "Pesan habis",
+    emptyReply: "Ngobrol sama Zero",
+  },
+};
+
+function uiCopy(language) {
+  return UI_COPY[language] || UI_COPY.fr;
+}
+
 function Composer({
   value,
   onChange,
@@ -317,8 +489,11 @@ function Composer({
   disabled,
   messagesLeft,
   maxChars,
+  isPremium,
+  language,
 }) {
   const [isFocused, setIsFocused] = useState(false);
+  const copy = uiCopy(language);
   const remaining = maxChars - value.length;
   const canSend = !disabled && value.trim().length > 0;
 
@@ -348,7 +523,7 @@ function Composer({
           onChange={(e) => onChange(e.target.value)}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
-          placeholder="Sois direct."
+          placeholder={copy.placeholder}
           maxLength={maxChars}
           rows={1}
           disabled={disabled}
@@ -366,7 +541,11 @@ function Composer({
               {value.length}/{maxChars}
             </span>
             <span className="message-count">
-              {messagesLeft > 0 ? `${messagesLeft} messages` : "Plus de messages"}
+              {isPremium
+                ? copy.unlimited
+                : messagesLeft > 0
+                  ? `${messagesLeft} ${copy.messages}`
+                  : copy.noMessages}
             </span>
           </div>
 
@@ -378,7 +557,7 @@ function Composer({
             whileTap={{ scale: canSend ? 0.94 : 1 }}
             transition={{ duration: 0.1 }}
           >
-            Envoyer
+            {copy.send}
           </motion.button>
         </div>
       </motion.div>
@@ -393,9 +572,11 @@ function PaywallModal({
   onClose,
   onWatchAd,
   onOpenPremium,
-  adCount,
-  maxAdsInRow,
+  rewardedAvailable,
+  language = "fr",
 }) {
+  const copy = getZeroCopy(language);
+
   return (
     <AnimatePresence>
       {open ? (
@@ -420,25 +601,42 @@ function PaywallModal({
 
             <div className="modal-actions">
               <motion.button
-  className="modal-btn modal-btn-primary"
-  type="button"
-  onClick={onWatchAd}
-  disabled={loading || adCount >= maxAdsInRow}
-  animate={
-    loading || adCount >= maxAdsInRow
-      ? { scale: 1 }
-      : {
-          scale: [1, 1.03, 1],
-        }
-  }
-  transition={{
-    duration: 1.6,
-    repeat: Infinity,
-    ease: "easeInOut",
-  }}
->
-  +{REWARDED_MESSAGES_GAIN} messages
-</motion.button>
+                className="modal-btn modal-btn-primary zero-v51-ad-button"
+                type="button"
+                onClick={onWatchAd}
+                disabled={loading || !rewardedAvailable}
+                whileTap={{ scale: rewardedAvailable ? 0.965 : 1 }}
+              >
+                <span className="zero-v51-ad-icon" aria-hidden="true">
+                  <i />
+                </span>
+
+                <span className="zero-v51-ad-copy">
+                  <strong>
+                    {rewardedAvailable
+                      ? `+${ZERO_CONFIG.rewarded.chatTurns} ${copy.common.messages}`
+                      : copy.monetization.boostUsed}
+                  </strong>
+
+                  <small>
+                    {rewardedAvailable
+                      ? copy.monetization.watchAd
+                      : copy.monetization.tomorrow}
+                  </small>
+                </span>
+              </motion.button>
+
+              <div className="zero-v5-bundle-copy">
+                <span>
+                  {copy.monetization.coreFor}{" "}
+                  {ZERO_CONFIG.rewarded.coreBoostMinutes} min · ×
+                  {ZERO_CONFIG.rewarded.coreMultiplier}
+                </span>
+                <span>
+                  {copy.monetization.arcadeFor}{" "}
+                  {ZERO_CONFIG.rewarded.arcadePassMinutes} min
+                </span>
+              </div>
 
               <button
                 className="modal-btn modal-btn-secondary"
@@ -446,14 +644,14 @@ function PaywallModal({
                 onClick={onOpenPremium}
                 disabled={loading}
               >
-                Illimité
+                {copy.monetization.unlimited}
               </button>
             </div>
 
 
 
             <button className="modal-close" type="button" onClick={onClose}>
-              Fermer
+              {copy.monetization.close}
             </button>
           </motion.div>
         </motion.div>
@@ -468,8 +666,11 @@ function PremiumModal({
   line,
   onClose,
   onPurchase,
-  onRestore
+  onRestore,
+  language = "fr",
 }) {
+  const copy = getZeroCopy(language);
+
   return (
     <AnimatePresence>
       {open ? (
@@ -495,9 +696,9 @@ function PremiumModal({
             <div className="premium-price">4.99€/mois</div>
 
             <div className="premium-list">
-              <div>Illimité</div>
-              <div>Sans pub</div>
-              <div>Accès direct</div>
+              {copy.monetization.premiumFeatures.map((feature) => (
+                <div key={feature}>{feature}</div>
+              ))}
             </div>
 
            <button
@@ -508,7 +709,7 @@ function PremiumModal({
     onPurchase(); // Et ça lance le vrai achat juste après
   }}
 >
-  Prendre l’illimité
+  {copy.monetization.getUnlimited}
 </button>
 
 <button
@@ -516,11 +717,11 @@ function PremiumModal({
   type="button"
   onClick={onRestore}
 >
-  Restaurer les achats
+  {copy.monetization.restore}
 </button>
 
             <button className="modal-close" type="button" onClick={onClose}>
-              Fermer
+              {copy.monetization.close}
             </button>
           </motion.div>
         </motion.div>
@@ -582,8 +783,29 @@ function getZeroMood(text) {
 
 
 export default function App() {
-  const [challengeOpen, setChallengeOpen] = useState(false);
-const [challengeLanguage, setChallengeLanguage] = useState("fr");
+  const [relationship, setRelationship] = useState(() => loadRelationship());
+  const [economy, setEconomy] = useState(() => loadEconomy());
+  const [wallet, setWallet] = useState(() => loadWallet());
+
+  const [coreOpen, setCoreOpen] = useState(false);
+  const [arcadeOpen, setArcadeOpen] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
+  const [walletOpen, setWalletOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [language, setLanguage] = useState(() => loadZeroLanguage());
+  const [coinRewardLoading, setCoinRewardLoading] = useState(false);
+  const [feedPulse, setFeedPulse] = useState(0);
+  const [rewardToast, setRewardToast] = useState("");
+  const [worldNotice, setWorldNotice] = useState(null);
+  const previousEnergyRef = useRef(
+    Number(relationship?.totalEnergy || 0)
+  );
+  const previousCoreStageRef = useRef(
+    getCoreStageIndex(
+      Number(relationship?.totalEnergy || 0)
+    )
+  );
+
   const [input, setInput] = useState("");
   const [reply, setReply] = useState("");
   const [loading, setLoading] = useState(false);
@@ -606,9 +828,7 @@ const [challengeLanguage, setChallengeLanguage] = useState("fr");
   });
   const [zeroAction, setZeroAction] = useState("none");
 
-  const [messagesLeft, setMessagesLeft] = useState(FREE_MESSAGES_START);
   const [isPremium, setIsPremium] = useState(false);
-  const [messagesUsed, setMessagesUsed] = useState(0);
   const [appReady, setAppReady] = useState(false);
   const [conversationHistory, setConversationHistory] = useState(() => {
     try {
@@ -638,18 +858,159 @@ const [challengeLanguage, setChallengeLanguage] = useState("fr");
   const [premiumLoading, setPremiumLoading] = useState(false);
   const [premiumLine, setPremiumLine] = useState("");
 
-  const [adCountInRow, setAdCountInRow] = useState(0);
 
 const timeoutRef = useRef(null);
 const followUpTimeoutRef = useRef(null);
-const sessionStartedAtRef = useRef(Date.now());
   
 
   const title = useMemo(() => "Zero", []);
-  const MAX_ADS_IN_ROW = 3;
+  const copy = getZeroCopy(language);
+
+  const messagesLeft = isPremium
+    ? Infinity
+    : Number(economy.chatTurns || 0);
+
+  const rewardedAvailable =
+    !isPremium && canWatchRewarded(economy);
+
+  const rewardHighlighted =
+    !isPremium &&
+    shouldHighlightRewarded(economy, relationship);
+
+  const coreBoosted =
+    getCoreBoostRemainingMs(economy) > 0 ||
+    getWalletCoreMultiplier(wallet) > 1;
 
 
   
+
+
+  useEffect(() => {
+    saveRelationship(relationship);
+  }, [relationship]);
+
+  useEffect(() => {
+    saveEconomy(economy);
+  }, [economy]);
+
+  useEffect(() => {
+    saveWallet(wallet);
+  }, [wallet]);
+
+  useEffect(() => {
+    saveZeroLanguage(language);
+  }, [language]);
+
+  useEffect(() => {
+    const currentStage = getCoreStageIndex(
+      Number(relationship?.totalEnergy || 0)
+    );
+
+    const previousStage =
+      Number(previousCoreStageRef.current || 0);
+
+    if (currentStage > previousStage) {
+      let nextWallet = wallet;
+      let earned = 0;
+
+      for (
+        let stage = previousStage + 1;
+        stage <= currentStage;
+        stage += 1
+      ) {
+        const reward =
+          claimCoreStageReward(
+            nextWallet,
+            stage
+          );
+
+        nextWallet = reward.wallet;
+        earned += reward.amount;
+      }
+
+      if (nextWallet !== wallet) {
+        setWallet(nextWallet);
+      }
+
+      if (earned > 0) {
+        gameSfx.unlock();
+
+        setRewardToast(
+          `Core +${earned} coins`
+        );
+
+        window.setTimeout(() => {
+          setRewardToast("");
+        }, 2300);
+      }
+    }
+
+    previousCoreStageRef.current =
+      currentStage;
+  }, [relationship?.totalEnergy, language]);
+
+  useEffect(() => {
+    const previous = Number(previousEnergyRef.current || 0);
+    const current = Number(relationship?.totalEnergy || 0);
+
+    const noticeBanks = {
+      fr: [
+        { at: 5, title: "arcade", text: "Pierre · Feuille · Ciseaux est dispo" },
+        { at: 8, title: "Core", text: "Zero commence à te cerner" },
+        { at: 18, title: "arcade", text: "Puissance 4 est dispo" },
+        { at: 26, title: "Core", text: "Zero devient plus à l’aise avec toi" },
+        { at: 32, title: "arcade", text: "Mémoire Duel est dispo" },
+        { at: 48, title: "arcade", text: "Duel 21 est dispo" },
+        { at: 70, title: "Core", text: "votre dynamique commence à vraiment tenir" },
+        { at: 72, title: "arcade", text: "Nombre secret est dispo" },
+        { at: 105, title: "arcade", text: "Codebreaker est dispo" },
+      ],
+
+      en: [
+        { at: 5, title: "arcade", text: "Rock · Paper · Scissors unlocked" },
+        { at: 8, title: "Core", text: "Zero is starting to get you" },
+        { at: 18, title: "arcade", text: "Connect 4 unlocked" },
+        { at: 26, title: "Core", text: "Zero is getting more comfortable with you" },
+        { at: 32, title: "arcade", text: "Memory Duel unlocked" },
+        { at: 48, title: "arcade", text: "21 Duel unlocked" },
+        { at: 70, title: "Core", text: "your dynamic is starting to settle in" },
+        { at: 72, title: "arcade", text: "Secret Number unlocked" },
+        { at: 105, title: "arcade", text: "Codebreaker unlocked" },
+      ],
+
+      id: [
+        { at: 5, title: "arcade", text: "Batu · Gunting · Kertas kebuka" },
+        { at: 8, title: "Core", text: "Zero mulai ngerti kamu" },
+        { at: 18, title: "arcade", text: "Connect 4 kebuka" },
+        { at: 26, title: "Core", text: "Zero mulai makin nyaman sama kamu" },
+        { at: 32, title: "arcade", text: "Duel Memori kebuka" },
+        { at: 48, title: "arcade", text: "Duel 21 kebuka" },
+        { at: 70, title: "Core", text: "dinamika kalian mulai makin stabil" },
+        { at: 72, title: "arcade", text: "Angka Rahasia kebuka" },
+        { at: 105, title: "arcade", text: "Pecahkan Kode kebuka" },
+      ],
+    };
+
+    const moments =
+      noticeBanks[language] ||
+      noticeBanks.fr;
+
+    const unlocked = moments.find(
+      (moment) =>
+        previous < moment.at &&
+        current >= moment.at
+    );
+
+    if (unlocked) {
+      setWorldNotice(unlocked);
+
+      window.setTimeout(() => {
+        setWorldNotice(null);
+      }, 3200);
+    }
+
+    previousEnergyRef.current = current;
+  }, [relationship?.totalEnergy]);
 
   useEffect(() => {
     try {
@@ -687,7 +1048,6 @@ useEffect(() => {
 
     if (customerInfo.entitlements.active["premium"]) {
       setIsPremium(true);
-      setMessagesLeft(99999);
     }
 
   } catch (e) {
@@ -750,11 +1110,6 @@ useEffect(() => {
     return () => clearInterval(interval);
   }, []);
 
-
-  
-  const sessionDurationSeconds = () =>
-    Math.max(1, Math.floor((Date.now() - sessionStartedAtRef.current) / 1000));
-
   const clearFlyingLater = () => {
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
@@ -765,66 +1120,69 @@ useEffect(() => {
 
   const openPaywall = async () => {
     setPaywallOpen(true);
-    setPaywallLoading(true);
+    setPaywallLoading(false);
 
-    try {
-      const data = await getPaywallLine({
-        messagesUsed,
-        sessionDurationSeconds: sessionDurationSeconds(),
-        adCountInRow,
-        messagesLeft,
-      });
-      setPaywallLine(data.line);
-    } catch {
-      setPaywallLine("T’as vidé tes messages. Regarde une pub ou prends l’illimité..");
-    } finally {
-      setPaywallLoading(false);
-    }
+    const data = await getPaywallLine(language);
+    setPaywallLine(data.line);
   };
 
   const openPremium = async () => {
     setPremiumOpen(true);
-    setPremiumLoading(true);
+    setPremiumLoading(false);
 
-    try {
-      const data = await getUpgradeLine({
-        messagesUsed,
-        sessionDurationSeconds: sessionDurationSeconds(),
-        adCountInRow,
-      });
-      setPremiumLine(data.line);
-    } catch {
-      setPremiumLine("Illimité, sans pub. Là tu parles tranquille");
-    } finally {
-      setPremiumLoading(false);
-    }
+    const data = await getUpgradeLine(language);
+    setPremiumLine(data.line);
   };
 
 const handleRewardedAd = async () => {
   sfx.button();
 
-  if (adCountInRow >= MAX_ADS_IN_ROW) {
-    setPaywallLine("C’est bon. Pause. T’as déjà assez gratté là.");
+  if (isPremium || !canWatchRewarded(economy)) {
+    setPaywallLine(copy.monetization.noBoost);
     return;
   }
 
   setPaywallLoading(true);
 
   try {
-    const rewarded = await showRewardedAd();
+    // LOCALHOST / npm run dev :
+    // rewarded automatiquement simulée.
+    // BUILD PRODUCTION :
+    // AdMob réel.
+    let rewarded = false;
 
-    if (rewarded) {
-      setMessagesLeft((prev) => prev + REWARDED_MESSAGES_GAIN);
-      setAdCountInRow((prev) => prev + 1);
-      setPaywallOpen(false);
-      setReply("Re");
-      sfx.arrive();
+    if (import.meta.env.DEV) {
+      await new Promise((resolve) =>
+        window.setTimeout(resolve, 650)
+      );
+
+      rewarded = true;
     } else {
-      setPaywallLine("Pas de récompense. Va jusqu’au bout.");
+      rewarded = await showRewardedAd();
     }
+
+    if (!rewarded) {
+      setPaywallLine(copy.monetization.adFailed);
+      return;
+    }
+
+    setEconomy((previous) =>
+      grantRewardedBundle(previous)
+    );
+
+    setPaywallOpen(false);
+    setRewardToast(
+      `+${ZERO_CONFIG.rewarded.chatTurns} ${copy.common.messages} · ${copy.monetization.rewardToast}`
+    );
+
+    window.setTimeout(() => {
+      setRewardToast("");
+    }, 2300);
+
+    sfx.arrive();
   } catch (err) {
     console.log("Ad error:", err);
-    setPaywallLine("Pub indispo pour l’instant. Réessaie.");
+    setPaywallLine(copy.monetization.adUnavailable);
   } finally {
     setPaywallLoading(false);
   }
@@ -864,34 +1222,33 @@ setFlyingId((prev) => prev + 1);
   clearFlyingLater();
 
   try {
-    const language = detectLanguage(clean);
+    const selectedLanguage = language;
     const data = await sendToBot({
       message: clean,
-      language,
-      messagesUsed,
-      sessionDurationSeconds: sessionDurationSeconds(),
+      language: selectedLanguage,
       conversationHistory: recentHistory,
       zeroState,
+      relationship: getServerRelationshipContext(relationship, selectedLanguage),
     });
-
-   const nextMood = getZeroMood(data.reply);
-
 setReply(data.reply);
 setEmotion(data.emotion);
 if (data.state) setZeroState(data.state);
+
 setZeroAction(data.action || "none");
 
-// Challenge désactivé pour le moment
+setRelationship((previous) =>
+  evolveRelationship(previous, {
+    userMessage: clean,
+    reply: data.reply,
+    signals: data.signals,
+    memoryCandidate: data.memoryCandidate,
+    usedMemoryId: data.usedMemoryId,
+    coreMultiplier: getCoreMultiplier(economy) * getWalletCoreMultiplier(wallet),
+  })
+);
 
-/*
-if (data.action === "challenge") {
-    setChallengeLanguage(language);
+setFeedPulse((value) => value + 1);
 
-    window.setTimeout(() => {
-        setChallengeOpen(true);
-    }, 900);
-}
-*/
 
 if (
   data.followUp?.shouldSend &&
@@ -942,10 +1299,14 @@ if (data.action === "refuse" || e.annoyance > 0.9) {
 setTimeout(() => {
   setMood("idle");
 }, 1600);
-  if (!isPremium) {
-  setMessagesLeft((prev) => Math.max(0, prev - 1));
-}
-    setMessagesUsed((prev) => prev + 1);
+  // Une micro-réponse traitée localement ne coûte aucun token,
+  // donc elle ne consomme pas la réserve de conversation.
+  if (!isPremium && !data.local) {
+    setEconomy((previous) =>
+      consumeChatTurn(previous)
+    );
+  }
+
 
     setConversationHistory((prev) => {
       const base = prev
@@ -958,11 +1319,7 @@ setTimeout(() => {
         { role: "assistant", text: data.reply, at: Date.now() },
       ];
     });
-
-    if ((messagesUsed + 1) % 4 === 0) {
-      setAdCountInRow(0);
-    }
- } catch (err) {
+} catch (err) {
   setReply("");
   setError(err?.message || "Ça a planté.");
   setMood("error");
@@ -976,13 +1333,183 @@ setTimeout(() => {
 };
 
 
+const handleGameFinish = (gameEvent) => {
+  setRelationship((previous) =>
+    evolveRelationshipFromGame(previous, {
+      ...gameEvent,
+      coreMultiplier:
+        getCoreMultiplier(economy) *
+        getWalletCoreMultiplier(wallet),
+    })
+  );
+
+  const reward = rewardGameCoins(
+    wallet,
+    gameEvent.result
+  );
+
+  setWallet(reward.wallet);
+  setFeedPulse((value) => value + 1);
+
+  return {
+    coins: reward.amount,
+    boosted: reward.boosted,
+  };
+};
+
+const handleLanguageChange = (nextLanguage) => {
+  setLanguage(nextLanguage);
+
+  // Une nouvelle langue repart avec un contexte de session propre
+  // pour éviter que les anciens messages FR contaminent l'ID/EN.
+  setConversationHistory([]);
+  setReply("");
+  setInput("");
+  setError("");
+  setMood("idle");
+  setZeroAction("none");
+
+  try {
+    localStorage.removeItem(
+      "zero_conversation_history"
+    );
+  } catch {
+    // ignore
+  }
+
+  gameSfx.soft();
+};
+
+const handleRewardedCoins = async () => {
+  if (!canClaimCoinReward(wallet, 5)) {
+    gameSfx.error();
+    setRewardToast(copy.wallet.noReward);
+
+    window.setTimeout(() => {
+      setRewardToast("");
+    }, 1800);
+
+    return;
+  }
+
+  setCoinRewardLoading(true);
+  gameSfx.tap();
+
+  try {
+    let rewarded = false;
+
+    if (import.meta.env.DEV) {
+      await new Promise((resolve) =>
+        window.setTimeout(resolve, 650)
+      );
+
+      rewarded = true;
+    } else {
+      rewarded = await showRewardedAd();
+    }
+
+    if (!rewarded) {
+      setRewardToast(copy.wallet.adFailed);
+      return;
+    }
+
+    setWallet((previous) =>
+      grantCoinReward(previous, 45)
+    );
+
+    gameSfx.coin();
+    setRewardToast("+45 coins");
+
+    window.setTimeout(() => {
+      setRewardToast("");
+    }, 1900);
+  } catch (err) {
+    console.log("Coin rewarded error:", err);
+    gameSfx.error();
+    setRewardToast(copy.wallet.adUnavailable);
+
+    window.setTimeout(() => {
+      setRewardToast("");
+    }, 1800);
+  } finally {
+    setCoinRewardLoading(false);
+  }
+};
+
+const handleBuyCoinPack = async (pack) => {
+  if (!pack) return;
+
+  gameSfx.tap();
+
+  try {
+    // DEV = achat simulé
+    if (import.meta.env.DEV) {
+      await new Promise((resolve) =>
+        window.setTimeout(resolve, 550)
+      );
+
+      setWallet((previous) =>
+        addPurchasedCoins(
+          previous,
+          pack.coins
+        )
+      );
+
+      gameSfx.buy();
+
+      setRewardToast(
+        `+${pack.coins} coins`
+      );
+
+      window.setTimeout(() => {
+        setRewardToast("");
+      }, 2200);
+
+      return;
+    }
+
+    await Purchases.purchaseProduct({
+      productIdentifier:
+        pack.productIdentifier,
+    });
+
+    setWallet((previous) =>
+      addPurchasedCoins(
+        previous,
+        pack.coins
+      )
+    );
+
+    gameSfx.buy();
+
+    setRewardToast(
+      `+${pack.coins} coins`
+    );
+
+    window.setTimeout(() => {
+      setRewardToast("");
+    }, 2200);
+  } catch (err) {
+    if (!err?.userCancelled) {
+      gameSfx.error();
+
+      setRewardToast(
+        copy.wallet.purchaseUnavailable
+      );
+
+      window.setTimeout(() => {
+        setRewardToast("");
+      }, 1800);
+    }
+  }
+};
+
 const handleRestorePurchases = async () => {
   try {
     const customerInfo = await Purchases.restorePurchases();
 
     if (customerInfo.entitlements.active["premium"]) {
       setIsPremium(true);
-      setMessagesLeft(99999);
       alert("Abonnement restauré");
     }
   } catch (e) {
@@ -1000,7 +1527,6 @@ const handlePurchasePremium = async () => {
     
     // Si l'achat fonctionne :
 setIsPremium(true);
-setMessagesLeft(99999);
     setPremiumOpen(false);
     setPaywallOpen(false);
     alert("Achat réussi ! 🎉");
@@ -1032,7 +1558,7 @@ if (!appReady) {
 } 
   return (
  <div
-  className={`app mood-${mood}`}
+  className={`app mood-${mood} ${cosmeticClassNames(wallet)}`}
   style={{
     "--zero-energy": emotion.energy,
     "--zero-warmth": emotion.warmth,
@@ -1048,12 +1574,76 @@ if (!appReady) {
       <div className="bg-glow bg-glow-2" />
       <div className="bg-glow bg-glow-3" />
       <FloatingShapes />
+      <ZeroCosmeticsLayer wallet={wallet} />
 
       <header className="topbar">
         <div className="brand">{title}</div>
 
         <div className="topbar-right">
-          <div className="status-pill">{messagesLeft} free</div>
+          <ZeroCoreButton
+            relationship={relationship}
+            highlighted={rewardHighlighted}
+            boosted={coreBoosted}
+            onClick={() => {
+              gameSfx.soft();
+              setCoreOpen(true);
+
+              if (rewardHighlighted) {
+                setEconomy((previous) =>
+                  markEarlyOfferSeen(previous)
+                );
+              }
+            }}
+          />
+
+          <div className="status-pill">
+            {isPremium ? "∞" : `${messagesLeft} ${copy.topbar.free}`}
+          </div>
+
+          <motion.button
+            className="zero-shop-top"
+            type="button"
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              gameSfx.tap();
+              setShopOpen(true);
+            }}
+          >
+            <span className="zero-shop-top-icon" aria-hidden="true">
+              <i />
+            </span>
+            <strong>{copy.common.shop}</strong>
+          </motion.button>
+
+          <motion.button
+            className="zero-wallet-top"
+            type="button"
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              gameSfx.tap();
+              setWalletOpen(true);
+            }}
+          >
+            <span className="zero-coin-icon is-small">
+              <i />
+            </span>
+            <strong>{wallet.coins}</strong>
+          </motion.button>
+
+          <motion.button
+            className="zero-settings-top"
+            type="button"
+            aria-label={copy.common.settings}
+            whileTap={{ scale: 0.92 }}
+            onClick={() => {
+              gameSfx.soft();
+              setSettingsOpen(true);
+            }}
+          >
+            <i />
+            <i />
+            <i />
+          </motion.button>
 
           <motion.button
             className="ghost-btn"
@@ -1080,11 +1670,20 @@ if (!appReady) {
   loading={loading}
   input={input}
   reply={reply}
+  relationship={relationship}
+  feedPulse={feedPulse}
 />
 
 
   <FlyingMessage text={flyingMessage} id={flyingId} />
-  <CenterReply loading={loading} reply={error || reply} />
+  <CenterReply
+    loading={loading}
+    reply={error || reply}
+    action={zeroAction}
+    mood={mood}
+    emotion={emotion}
+    language={language}
+  />
 </main>
 
       <Composer
@@ -1094,6 +1693,8 @@ if (!appReady) {
         disabled={loading}
         messagesLeft={messagesLeft}
         maxChars={MAX_CHARS}
+        isPremium={isPremium}
+        language={language}
       />
 
       <PaywallModal
@@ -1107,8 +1708,8 @@ if (!appReady) {
 }}
         onWatchAd={handleRewardedAd}
         onOpenPremium={openPremium}
-        adCount={adCountInRow}
-        maxAdsInRow={MAX_ADS_IN_ROW}
+        rewardedAvailable={rewardedAvailable}
+        language={language}
       />
 
 <PremiumModal
@@ -1118,21 +1719,127 @@ if (!appReady) {
   onClose={() => setPremiumOpen(false)}
   onPurchase={handlePurchasePremium}
   onRestore={handleRestorePurchases}
+  language={language}
 />
 
-  {challengeOpen && (
-      <ZeroChallenge
-        language={challengeLanguage}
-        onExit={() => {
-          setChallengeOpen(false);
-          setZeroAction("none");
-          setMood("idle");
-        }}
-        onComplete={(gameResult) => {
-          console.log("Challenge terminé", gameResult);
-        }}
-      />
-    )}
+
+<ZeroCorePanel
+  open={coreOpen}
+  relationship={relationship}
+  economy={economy}
+  wallet={wallet}
+  isPremium={isPremium}
+  rewardLoading={paywallLoading}
+  onClose={() => setCoreOpen(false)}
+  onReward={handleRewardedAd}
+  onOpenArcade={() => {
+    setCoreOpen(false);
+    setArcadeOpen(true);
+  }}
+  onOpenShop={() => {
+    setCoreOpen(false);
+    setShopOpen(true);
+  }}
+  language={language}
+/>
+
+<AnimatePresence>
+  {arcadeOpen ? (
+    <ZeroArcade
+      open={arcadeOpen}
+      relationship={relationship}
+      economy={economy}
+      wallet={wallet}
+      isPremium={isPremium}
+      onClose={() => setArcadeOpen(false)}
+      onGameFinish={handleGameFinish}
+      language={language}
+    />
+  ) : null}
+</AnimatePresence>
+
+
+
+<AnimatePresence>
+  {shopOpen ? (
+    <ZeroShop
+      open={shopOpen}
+      wallet={wallet}
+      onWallet={setWallet}
+      onClose={() => setShopOpen(false)}
+      language={language}
+    />
+  ) : null}
+</AnimatePresence>
+
+<AnimatePresence>
+  {walletOpen ? (
+    <ZeroWalletPanel
+      open={walletOpen}
+      wallet={wallet}
+      rewardedCount={getCoinRewardedToday(wallet)}
+      rewardedMax={5}
+      rewardedLoading={coinRewardLoading}
+      onRewardedCoins={handleRewardedCoins}
+      onBuyPack={handleBuyCoinPack}
+      onClose={() => setWalletOpen(false)}
+      language={language}
+    />
+  ) : null}
+</AnimatePresence>
+
+<AnimatePresence>
+  {settingsOpen ? (
+    <ZeroSettings
+      open={settingsOpen}
+      language={language}
+      onLanguage={handleLanguageChange}
+      onClose={() => setSettingsOpen(false)}
+    />
+  ) : null}
+</AnimatePresence>
+
+<AnimatePresence>
+  {worldNotice ? (
+    <motion.button
+      type="button"
+      className="zero-v51-world-notice"
+      initial={{ opacity: 0, y: -16, scale: 0.92 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -9, scale: 0.96 }}
+      transition={{
+        duration: 0.42,
+        ease: [0.16, 1, 0.3, 1],
+      }}
+      onClick={() => {
+        setWorldNotice(null);
+        setCoreOpen(true);
+      }}
+    >
+      <span className="zero-v51-world-notice-core">
+        <i />
+      </span>
+
+      <span>
+        <small>{worldNotice.title}</small>
+        <strong>{worldNotice.text}</strong>
+      </span>
+    </motion.button>
+  ) : null}
+</AnimatePresence>
+
+<AnimatePresence>
+  {rewardToast ? (
+    <motion.div
+      className="zero-v5-reward-toast"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 5 }}
+    >
+      {rewardToast}
+    </motion.div>
+  ) : null}
+</AnimatePresence>
     </div>
   );
 }
