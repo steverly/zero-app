@@ -9797,3 +9797,497 @@ small {
       repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+
+/* =========================================================
+   ZERO V7.0 — REAL WORLD RENDERER
+   One renderer for shop preview + equipped scene.
+   ========================================================= */
+
+.zero-world {
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.zero-world.is-scene {
+  position: fixed;
+  inset: 0;
+  z-index: 4;
+}
+
+.zero-world.is-preview {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+}
+
+/* Old black/glow layers are now only fallback behind the real world. */
+.app > .bg-gradient,
+.app > .bg-glow {
+  z-index: 0 !important;
+}
+
+.app > .floating-shapes {
+  z-index: 5 !important;
+}
+
+/* Main character/content remains above the world. */
+.topbar {
+  position: relative;
+  z-index: 40 !important;
+}
+
+.main-area {
+  position: relative;
+  z-index: 10 !important;
+}
+
+.composer-wrap {
+  position: relative;
+  z-index: 40 !important;
+}
+
+.zero-cosmetics-layer {
+  z-index: 12 !important;
+}
+
+/* Shared world primitives */
+.zero-world-sky,
+.zero-world-light,
+.zero-world-floor-glow,
+.zero-world-haze,
+.zero-world-water,
+.zero-world-horizon,
+.zero-world-cloud,
+.zero-world-soft-orb,
+.zero-world-sun,
+.zero-world-bubbles {
+  position: absolute;
+}
+
+.zero-world-sky {
+  inset: 0;
+}
+
+.zero-world-light {
+  inset: 0;
+  mix-blend-mode: screen;
+}
+
+.zero-world-floor-glow {
+  left: -10%;
+  right: -10%;
+  bottom: -16%;
+  height: 42%;
+  border-radius: 50% 50% 0 0;
+  filter: blur(18px);
+}
+
+/* DEFAULT / ORIGINAL — no longer black */
+.zero-world--bg_void .zero-world-sky {
+  background:
+    radial-gradient(
+      circle at 76% 18%,
+      rgba(255, 213, 174, 0.30),
+      transparent 25%
+    ),
+    radial-gradient(
+      ellipse at 16% 78%,
+      rgba(145, 205, 195, 0.20),
+      transparent 35%
+    ),
+    linear-gradient(
+      160deg,
+      #514754 0%,
+      #6d5662 45%,
+      #8b676d 70%,
+      #594850 100%
+    );
+}
+
+.zero-world--bg_void .zero-world-light {
+  background:
+    radial-gradient(
+      ellipse at 50% 38%,
+      rgba(255, 238, 215, 0.07),
+      transparent 42%
+    );
+}
+
+.zero-world--bg_void .zero-world-floor-glow {
+  background:
+    radial-gradient(
+      ellipse,
+      rgba(183, 159, 210, 0.20),
+      transparent 67%
+    );
+}
+
+.zero-world-soft-orb {
+  border-radius: 50%;
+  filter: blur(14px);
+}
+
+.zero-world-soft-orb.is-a {
+  width: 28%;
+  aspect-ratio: 1;
+  left: 7%;
+  top: 12%;
+  background:
+    rgba(155, 210, 202, 0.08);
+}
+
+.zero-world-soft-orb.is-b {
+  width: 30%;
+  aspect-ratio: 1;
+  right: 7%;
+  bottom: 9%;
+  background:
+    rgba(236, 178, 143, 0.09);
+}
+
+/* SUNSET */
+.zero-world--bg_sunset .zero-world-sky {
+  background:
+    linear-gradient(
+      180deg,
+      #755d86 0%,
+      #a66f86 38%,
+      #d7837f 62%,
+      #efaa78 74%,
+      #67434c 75%,
+      #45383e 100%
+    );
+}
+
+.zero-world--bg_sunset .zero-world-light {
+  background:
+    radial-gradient(
+      circle at 72% 63%,
+      rgba(255, 225, 167, 0.23),
+      transparent 22%
+    );
+}
+
+.zero-world-sun {
+  width: clamp(76px, 10vw, 150px);
+  aspect-ratio: 1;
+  right: 20%;
+  top: 56%;
+  transform: translateY(-50%);
+  border-radius: 50%;
+  background:
+    #f7d79a;
+  box-shadow:
+    0 0 22px rgba(247, 215, 154, 0.35),
+    0 0 70px rgba(241, 173, 117, 0.20);
+}
+
+.zero-world-horizon {
+  left: 0;
+  right: 0;
+  top: 74%;
+  height: 2px;
+  background:
+    rgba(255, 220, 175, 0.34);
+  box-shadow:
+    0 7px 18px rgba(245, 166, 118, 0.12);
+}
+
+.zero-world-haze {
+  left: 0;
+  right: 0;
+  top: 57%;
+  height: 25%;
+  background:
+    linear-gradient(
+      180deg,
+      transparent,
+      rgba(255, 191, 145, 0.10),
+      transparent
+    );
+  filter: blur(8px);
+}
+
+.zero-world--bg_sunset .zero-world-floor-glow {
+  background:
+    radial-gradient(
+      ellipse,
+      rgba(233, 159, 119, 0.18),
+      transparent 65%
+    );
+}
+
+/* AQUARIUM */
+.zero-world--bg_aquarium .zero-world-sky {
+  background:
+    linear-gradient(
+      180deg,
+      #4a8489 0%,
+      #3e6d75 40%,
+      #31565f 70%,
+      #2b434b 100%
+    );
+}
+
+.zero-world--bg_aquarium .zero-world-light {
+  background:
+    radial-gradient(
+      ellipse at 50% -6%,
+      rgba(220, 255, 247, 0.34),
+      transparent 46%
+    );
+}
+
+.zero-world-water {
+  inset: -15%;
+  background:
+    repeating-radial-gradient(
+      ellipse at 50% 0%,
+      transparent 0 30px,
+      rgba(221, 255, 249, 0.075) 33px 36px,
+      transparent 39px 70px
+    );
+  animation:
+    zero70-water
+    8s
+    ease-in-out
+    infinite alternate;
+}
+
+@keyframes zero70-water {
+  from {
+    transform: translateX(-2%) skewX(-2deg);
+  }
+  to {
+    transform: translateX(3%) skewX(3deg);
+  }
+}
+
+.zero-world-bubbles {
+  inset: 0;
+}
+
+.zero-world-bubbles i {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border:
+    1px solid rgba(224, 255, 250, 0.28);
+  border-radius: 50%;
+  opacity: 0.34;
+  animation:
+    zero70-bubble
+    8s
+    linear
+    infinite;
+}
+
+.zero-world-bubbles i:nth-child(1) { left: 12%; top: 82%; animation-delay: -1s; }
+.zero-world-bubbles i:nth-child(2) { left: 25%; top: 72%; animation-delay: -4s; }
+.zero-world-bubbles i:nth-child(3) { left: 42%; top: 90%; animation-delay: -6s; }
+.zero-world-bubbles i:nth-child(4) { left: 58%; top: 75%; animation-delay: -2s; }
+.zero-world-bubbles i:nth-child(5) { left: 76%; top: 86%; animation-delay: -5s; }
+.zero-world-bubbles i:nth-child(6) { left: 88%; top: 69%; animation-delay: -3s; }
+.zero-world-bubbles i:nth-child(7) { left: 17%; top: 94%; animation-delay: -7s; }
+.zero-world-bubbles i:nth-child(8) { left: 66%; top: 96%; animation-delay: -4.8s; }
+.zero-world-bubbles i:nth-child(9) { left: 34%; top: 84%; animation-delay: -2.4s; }
+.zero-world-bubbles i:nth-child(10) { left: 52%; top: 88%; animation-delay: -6.8s; }
+.zero-world-bubbles i:nth-child(11) { left: 82%; top: 78%; animation-delay: -1.8s; }
+.zero-world-bubbles i:nth-child(12) { left: 6%; top: 90%; animation-delay: -5.6s; }
+.zero-world-bubbles i:nth-child(13) { left: 72%; top: 92%; animation-delay: -3.6s; }
+.zero-world-bubbles i:nth-child(14) { left: 46%; top: 98%; animation-delay: -7.3s; }
+
+@keyframes zero70-bubble {
+  from {
+    transform: translateY(0) scale(0.8);
+    opacity: 0;
+  }
+  20% { opacity: 0.34; }
+  to {
+    transform: translateY(-78vh) scale(1.15);
+    opacity: 0;
+  }
+}
+
+.zero-world--bg_aquarium .zero-world-floor-glow {
+  background:
+    radial-gradient(
+      ellipse,
+      rgba(128, 204, 195, 0.16),
+      transparent 66%
+    );
+}
+
+/* CLOUD ROOM */
+.zero-world--bg_cloud .zero-world-sky {
+  background:
+    linear-gradient(
+      180deg,
+      #8775a7 0%,
+      #aa82a4 42%,
+      #d69a9f 70%,
+      #866372 100%
+    );
+}
+
+.zero-world--bg_cloud .zero-world-light {
+  background:
+    radial-gradient(
+      circle at 77% 18%,
+      rgba(255, 231, 211, 0.18),
+      transparent 28%
+    );
+}
+
+.zero-world-cloud {
+  width: 44%;
+  height: 18%;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      ellipse,
+      rgba(255, 243, 231, 0.28),
+      transparent 70%
+    );
+  filter: blur(10px);
+}
+
+.zero-world-cloud.is-a {
+  left: -10%;
+  top: 62%;
+  animation:
+    zero70-cloud-a
+    16s
+    ease-in-out
+    infinite alternate;
+}
+
+.zero-world-cloud.is-b {
+  right: -12%;
+  top: 30%;
+  opacity: 0.78;
+  animation:
+    zero70-cloud-b
+    18s
+    ease-in-out
+    infinite alternate;
+}
+
+.zero-world-cloud.is-c {
+  left: 28%;
+  top: 12%;
+  width: 30%;
+  height: 12%;
+  opacity: 0.42;
+  animation:
+    zero70-cloud-c
+    20s
+    ease-in-out
+    infinite alternate;
+}
+
+@keyframes zero70-cloud-a {
+  to { transform: translateX(10%) translateY(-5%); }
+}
+@keyframes zero70-cloud-b {
+  to { transform: translateX(-10%) translateY(7%); }
+}
+@keyframes zero70-cloud-c {
+  to { transform: translateX(14%); }
+}
+
+.zero-world--bg_cloud .zero-world-floor-glow {
+  background:
+    radial-gradient(
+      ellipse,
+      rgba(255, 213, 202, 0.14),
+      transparent 66%
+    );
+}
+
+/* PREVIEW SCALING: exact same composition, just miniaturized */
+.zero-world.is-preview .zero-world-sun {
+  width: 30px;
+  right: 22%;
+}
+
+.zero-world.is-preview .zero-world-horizon {
+  top: 74%;
+}
+
+.zero-world.is-preview .zero-world-bubbles i:nth-child(n+6) {
+  display: none;
+}
+
+.zero-world.is-preview .zero-world-cloud {
+  filter: blur(5px);
+}
+
+/* Shop eyes/accessories sit above world preview */
+.zero63-shop-preview {
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.zero63-preview-eyes,
+.zero63-preview-crown,
+.zero63-preview-headphones,
+.zero63-preview-beanie,
+.zero63-preview-fireflies,
+.zero63-preview-stars {
+  position: relative;
+  z-index: 3;
+}
+
+/* Disable old background-specific preview paint so the shared renderer is the only source */
+.zero63-shop-preview.bg_sunset,
+.zero63-shop-preview.bg_aquarium,
+.zero63-shop-preview.bg_cloud,
+.zero63-shop-preview.bg_void {
+  background: transparent !important;
+}
+
+/* Critical: old cosmetic background CSS is no longer allowed to fight the renderer. */
+.app.cosmetic-bg_sunset .bg-gradient,
+.app.cosmetic-bg_aquarium .bg-gradient,
+.app.cosmetic-bg_cloud .bg-gradient,
+.app.cosmetic-bg_void .bg-gradient {
+  opacity: 0 !important;
+}
+
+/* Also remove old world pseudo-layers that could cover the real renderer. */
+.app.cosmetic-bg_sunset .zero-cosmetics-layer::before,
+.app.cosmetic-bg_sunset .zero-cosmetics-layer::after,
+.app.cosmetic-bg_aquarium .zero-cosmetics-layer::before,
+.app.cosmetic-bg_aquarium .zero-cosmetics-layer::after,
+.app.cosmetic-bg_cloud .zero-cosmetics-layer::before,
+.app.cosmetic-bg_cloud .zero-cosmetics-layer::after,
+.app.cosmetic-bg_void .zero-cosmetics-layer::before,
+.app.cosmetic-bg_void .zero-cosmetics-layer::after {
+  content: none !important;
+}
+
+/* Phone: worlds keep full-screen composition */
+@media (max-width: 680px) {
+  .zero-world-sun {
+    width: 78px;
+    right: 12%;
+    top: 61%;
+  }
+
+  .zero-world-horizon {
+    top: 76%;
+  }
+
+  .zero-world-cloud {
+    width: 58%;
+  }
+
+  .zero-world.is-preview .zero-world-sun {
+    width: 28px;
+    right: 20%;
+    top: 58%;
+  }
+}

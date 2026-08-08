@@ -33,6 +33,8 @@ import ZeroShop from "./ZeroShop";
 import ZeroWalletPanel from "./ZeroWalletPanel";
 import ZeroSettings from "./ZeroSettings";
 import ZeroCosmeticsLayer, { cosmeticClassNames } from "./ZeroCosmeticsLayer";
+import ZeroWorldBackground from "./ZeroWorldBackground";
+import { getCosmeticState } from "./zero-wallet";
 
 import {
   loadWallet,
@@ -961,6 +963,7 @@ const followUpTimeoutRef = useRef(null);
     getWalletCoreMultiplier(wallet) > 1;
 
   const livingStatus = livingCoreLabel(livingCore, language);
+  const cosmeticState = getCosmeticState(wallet);
 
 
   
@@ -2147,6 +2150,11 @@ if (!appReady) {
       <div className="bg-glow bg-glow-1" />
       <div className="bg-glow bg-glow-2" />
       <div className="bg-glow bg-glow-3" />
+
+      <ZeroWorldBackground
+        background={cosmeticState.background}
+      />
+
       <FloatingShapes />
       <ZeroCosmeticsLayer wallet={wallet} />
 

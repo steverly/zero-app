@@ -10,6 +10,7 @@ import {
 } from "./zero-wallet";
 
 import { gameSfx } from "./zero-game-sfx";
+import ZeroWorldBackground from "./ZeroWorldBackground";
 
 const COPY = {
   fr: {
@@ -130,8 +131,18 @@ function Coin({ small = false }) {
 }
 
 function Preview({ item }) {
+  const isBackground =
+    item.type === "background";
+
   return (
     <div className={`zero63-shop-preview ${item.id}`}>
+      {isBackground ? (
+        <ZeroWorldBackground
+          background={item.id}
+          preview
+        />
+      ) : null}
+
       <div className="zero63-preview-eyes">
         <i />
         <i />
