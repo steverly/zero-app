@@ -9127,7 +9127,7 @@ small {
 @media(max-height:650px){.zero66-impulse{bottom:92px}.zero66-living-whisper{display:none}}
 
 /* V6.7 — Care loop */
-.zero67-care{position:fixed;left: 18px;bottom:clamp(77px,10vh,104px);z-index:18;transform: none;width:min(235px,calc(100vw - 150px));min-height:48px;padding:6px 9px 6px 6px;display:grid;grid-template-columns:38px 1fr 18px;align-items:center;gap:8px;border:1px solid rgba(238,200,164,.10);border-radius:17px;background:rgba(19,17,16,.74);box-shadow:0 10px 34px rgba(0,0,0,.24);backdrop-filter:blur(15px);color:rgba(248,240,229,.72);cursor:pointer}
+.zero67-care{position:fixed;left:50%;bottom:clamp(77px,10vh,104px);z-index:18;transform:translateX(-50%);width:min(235px,calc(100vw - 150px));min-height:48px;padding:6px 9px 6px 6px;display:grid;grid-template-columns:38px 1fr 18px;align-items:center;gap:8px;border:1px solid rgba(238,200,164,.10);border-radius:17px;background:rgba(19,17,16,.74);box-shadow:0 10px 34px rgba(0,0,0,.24);backdrop-filter:blur(15px);color:rgba(248,240,229,.72);cursor:pointer}
 .zero67-care:hover{border-color:rgba(238,200,164,.18);background:rgba(25,21,19,.82)}
 .zero67-care.has-reward{border-color:rgba(238,190,136,.28);box-shadow:0 10px 38px rgba(0,0,0,.25),0 0 22px rgba(221,168,115,.07)}
 .zero67-care-orb{width:38px;height:38px;display:grid;place-items:center;border-radius:13px;background:radial-gradient(circle at 50% 42%,rgba(235,193,153,.13),rgba(255,255,255,.018) 66%)}
@@ -9143,12 +9143,7 @@ small {
 .zero67-care-plus{font-size:17px;color:rgba(235,193,153,.46)}
 .zero67-care.has-reward .zero67-care-plus{animation:zero67reward .8s ease-in-out infinite alternate;color:rgba(244,205,162,.9)}
 @keyframes zero67reward{to{transform:scale(1.2);text-shadow:0 0 12px rgba(241,190,139,.35)}}
-.zero67-care {
-  left: 12px;
-  bottom: 82px;
-  transform: none;
-  width: min(220px, calc(100vw - 118px));
-}
+@media(max-width:680px){.zero67-care{bottom:82px;width:min(220px,calc(100vw - 118px))}}
 @media(max-width:380px){.zero67-care{width:190px}.zero67-care-copy>small{max-width:105px}}
 
 
@@ -9235,4 +9230,570 @@ small {
   opacity: 0.42;
   filter: saturate(0.55);
   pointer-events: none;
+}
+
+
+/* =========================================================
+   ZERO V6.9 — PLAYFUL WORLD
+   Less "AI dashboard", more warm game world.
+   ========================================================= */
+
+:root {
+  --z69-ink: #342d35;
+  --z69-cream: #f6ead9;
+  --z69-peach: #e9a982;
+  --z69-lilac: #afa1d7;
+  --z69-mint: #8fc9c0;
+  --z69-card: rgba(255, 247, 235, 0.12);
+  --z69-line: rgba(255, 244, 229, 0.16);
+}
+
+/* ---------- DEFAULT WORLD ---------- */
+/* The default room is no longer black. */
+.app.cosmetic-bg_void .bg-gradient,
+.app:not(.cosmetic-bg_sunset):not(.cosmetic-bg_aquarium):not(.cosmetic-bg_cloud)
+.bg-gradient {
+  background:
+    radial-gradient(
+      circle at 74% 18%,
+      rgba(247, 196, 151, 0.34) 0 7%,
+      rgba(247, 196, 151, 0.10) 21%,
+      transparent 39%
+    ),
+    radial-gradient(
+      ellipse at 16% 78%,
+      rgba(151, 203, 193, 0.20),
+      transparent 38%
+    ),
+    radial-gradient(
+      ellipse at 52% 104%,
+      rgba(177, 155, 211, 0.26),
+      transparent 48%
+    ),
+    linear-gradient(
+      160deg,
+      #4f4556 0%,
+      #67545f 34%,
+      #89666b 65%,
+      #584751 100%
+    ) !important;
+}
+
+/* A soft room-light layer gives depth without sci-fi grids. */
+.app.cosmetic-bg_void
+.zero-cosmetics-layer::before {
+  content: "";
+  position: absolute;
+  left: -9%;
+  right: -9%;
+  bottom: -14%;
+  height: 38%;
+  border-radius: 50% 50% 0 0;
+  background:
+    radial-gradient(
+      ellipse at center,
+      rgba(255, 224, 189, 0.11),
+      transparent 68%
+    );
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+/* ---------- BACKGROUNDS = PREVIEW AND EQUIPPED MATCH ---------- */
+
+/* SUNSET */
+.zero63-shop-preview.bg_sunset,
+.app.cosmetic-bg_sunset .bg-gradient {
+  background:
+    radial-gradient(
+      circle at 72% 64%,
+      #f6d39d 0 6%,
+      rgba(246, 211, 157, 0.44) 7% 13%,
+      transparent 24%
+    ),
+    linear-gradient(
+      180deg,
+      #72577d 0%,
+      #b66f7b 52%,
+      #e29a78 73%,
+      #69444e 74%,
+      #45373f 100%
+    ) !important;
+}
+
+.app.cosmetic-bg_sunset
+.zero-cosmetics-layer::before {
+  content: "";
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  bottom: 20%;
+  height: 2px;
+  background:
+    rgba(250, 220, 175, 0.24);
+  box-shadow:
+    0 16px 28px rgba(247, 181, 126, 0.08);
+}
+
+/* BLUE ROOM / AQUARIUM */
+.zero63-shop-preview.bg_aquarium,
+.app.cosmetic-bg_aquarium .bg-gradient {
+  background:
+    radial-gradient(
+      ellipse at 50% -8%,
+      rgba(204, 250, 240, 0.40),
+      transparent 43%
+    ),
+    radial-gradient(
+      circle at 84% 72%,
+      rgba(118, 196, 187, 0.18),
+      transparent 33%
+    ),
+    linear-gradient(
+      180deg,
+      #386b72 0%,
+      #315861 42%,
+      #27454e 73%,
+      #263942 100%
+    ) !important;
+}
+
+.app.cosmetic-bg_aquarium
+.zero-cosmetics-layer::before {
+  content: "";
+  position: absolute;
+  inset: -16%;
+  background:
+    repeating-radial-gradient(
+      ellipse at 50% 0%,
+      transparent 0 26px,
+      rgba(217, 255, 248, 0.08) 28px 30px,
+      transparent 34px 60px
+    );
+  animation:
+    zero69-water 8s ease-in-out infinite alternate;
+}
+
+@keyframes zero69-water {
+  from { transform: translateX(-2%) skewX(-2deg); }
+  to { transform: translateX(3%) skewX(3deg); }
+}
+
+/* CLOUD ROOM */
+.zero63-shop-preview.bg_cloud,
+.app.cosmetic-bg_cloud .bg-gradient {
+  background:
+    radial-gradient(
+      ellipse at 18% 76%,
+      rgba(255, 240, 225, 0.36),
+      transparent 28%
+    ),
+    radial-gradient(
+      ellipse at 86% 37%,
+      rgba(255, 240, 225, 0.28),
+      transparent 27%
+    ),
+    linear-gradient(
+      180deg,
+      #7c6a9c 0%,
+      #a77da1 45%,
+      #d69a9d 72%,
+      #826071 100%
+    ) !important;
+}
+
+/* Make equipped cloud shapes match the preview's soft blobs. */
+.app.cosmetic-bg_cloud
+.zero-cosmetics-layer::before,
+.app.cosmetic-bg_cloud
+.zero-cosmetics-layer::after {
+  background:
+    radial-gradient(
+      ellipse,
+      rgba(255, 243, 231, 0.30),
+      transparent 67%
+    ) !important;
+  filter: blur(14px) !important;
+}
+
+/* ---------- PANELS: game menus, not black glass AI dashboards ---------- */
+.zero-v5-core-panel,
+.zero63-shop,
+.zero-wallet-screen,
+.zero-settings,
+.zero-arcade {
+  background:
+    radial-gradient(
+      ellipse at 88% 3%,
+      rgba(231, 169, 126, 0.13),
+      transparent 30%
+    ),
+    radial-gradient(
+      ellipse at 9% 92%,
+      rgba(143, 201, 192, 0.08),
+      transparent 31%
+    ),
+    linear-gradient(
+      165deg,
+      #403942 0%,
+      #383239 48%,
+      #302d34 100%
+    ) !important;
+}
+
+.zero63-shop-card,
+.zero-arcade-grid-v6 > button,
+.zero-v6-core-card,
+.zero-wallet-card,
+.zero-settings-card {
+  background:
+    linear-gradient(
+      145deg,
+      rgba(255, 241, 224, 0.095),
+      rgba(255, 255, 255, 0.035)
+    ) !important;
+  border-color:
+    rgba(255, 231, 207, 0.12) !important;
+}
+
+/* Top bar is compact and floats like a game HUD. */
+.topbar {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(50, 43, 50, 0.72),
+      rgba(50, 43, 50, 0.18)
+    ) !important;
+  backdrop-filter:
+    blur(16px) saturate(1.1);
+}
+
+/* PLAY is a proper game CTA, not a dark AI tile. */
+.zero64-play-orb {
+  border-color:
+    rgba(255, 220, 184, 0.24) !important;
+  background:
+    radial-gradient(
+      circle at 50% 13%,
+      rgba(255, 218, 177, 0.24),
+      transparent 44%
+    ),
+    linear-gradient(
+      160deg,
+      rgba(190, 126, 111, 0.68),
+      rgba(119, 93, 130, 0.62)
+    ) !important;
+  box-shadow:
+    0 14px 35px rgba(56, 35, 45, 0.25),
+    inset 0 1px 0 rgba(255,255,255,0.13) !important;
+}
+
+.zero64-play-orb strong {
+  color: rgba(255, 245, 231, 0.95) !important;
+}
+
+.zero64-play-orb small {
+  color: rgba(255, 239, 221, 0.62) !important;
+}
+
+/* Duplicate bottom Care widget is removed from JSX.
+   Hide stale cached markup too. */
+.zero67-care {
+  display: none !important;
+}
+
+/* ---------- ACCESSORIES: equipped version follows the preview language ---------- */
+
+/* Crown = simple solid crown like shop preview. */
+.zero-accessory-crown {
+  top: clamp(58px, 11vh, 108px) !important;
+  width: 92px !important;
+  height: 38px !important;
+  border: 0 !important;
+}
+
+.zero-accessory-crown::before {
+  inset: 0 !important;
+  background:
+    linear-gradient(
+      180deg,
+      #edca8c,
+      #cfa66d
+    ) !important;
+  filter:
+    drop-shadow(
+      0 5px 8px rgba(54, 40, 38, 0.18)
+    ) !important;
+}
+
+.zero-accessory-crown i {
+  display: none !important;
+}
+
+/* Headphones = clean lavender band exactly like preview. */
+.zero-accessory-headphones {
+  top: clamp(79px, 15vh, 142px) !important;
+  width: 174px !important;
+  height: 80px !important;
+  border: 5px solid #a99bc9 !important;
+  border-bottom-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.zero-accessory-headphones i {
+  top: 38px !important;
+  width: 22px !important;
+  height: 35px !important;
+  background: #8d80ae !important;
+  box-shadow: none !important;
+}
+
+.zero-accessory-headphones span {
+  background: #c2b6df !important;
+}
+
+/* Beanie = same muted mint color as preview. */
+.zero63-accessory-beanie {
+  background:
+    linear-gradient(
+      180deg,
+      #a4bfbb,
+      #819e9a
+    ) !important;
+}
+
+/* ---------- MOBILE REBUILD ---------- */
+@media (max-width: 680px) {
+  /* One-row HUD. No wrapping pile of tiny controls. */
+  .topbar {
+    min-height: 56px !important;
+    height: 56px !important;
+    padding:
+      max(8px, env(safe-area-inset-top))
+      8px 5px !important;
+    align-items: center !important;
+  }
+
+  .brand {
+    padding-top: 0 !important;
+    flex: 0 0 auto;
+  }
+
+  .topbar-right {
+    max-width: none !important;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-wrap: nowrap !important;
+    justify-content: flex-end !important;
+    gap: 4px !important;
+  }
+
+  /* Keep only useful compact HUD controls visible. */
+  .status-pill {
+    display: none !important;
+  }
+
+  .zero63-core-entry {
+    order: initial !important;
+    width: 74px !important;
+    min-width: 74px !important;
+    height: 34px !important;
+    margin-left: 0 !important;
+    padding: 4px 7px !important;
+    grid-template-columns: 20px 1fr !important;
+    border-radius: 12px !important;
+  }
+
+  .zero63-core-heart {
+    width: 20px !important;
+    height: 20px !important;
+    border-radius: 7px !important;
+  }
+
+  .zero63-core-entry
+  .zero-core-entry-copy small,
+  .zero63-core-percent {
+    display: none !important;
+  }
+
+  .zero63-core-entry
+  .zero-core-entry-copy strong {
+    font-size: 8px !important;
+  }
+
+  .zero63-core-track {
+    left: 7px !important;
+    right: 7px !important;
+    bottom: 3px !important;
+  }
+
+  .zero-shop-top,
+  .zero-wallet-top,
+  .zero-settings-top,
+  .zero65-music-top,
+  .ghost-btn {
+    min-height: 32px !important;
+    height: 32px !important;
+    border-radius: 11px !important;
+  }
+
+  .zero-shop-top {
+    padding: 0 8px !important;
+  }
+
+  .zero-shop-top strong {
+    display: none !important;
+  }
+
+  .zero-wallet-top {
+    padding: 0 7px !important;
+  }
+
+  .zero-wallet-top strong {
+    font-size: 8px !important;
+  }
+
+  .zero-settings-top,
+  .zero65-music-top {
+    width: 32px !important;
+    min-width: 32px !important;
+  }
+
+  /* Main stage gets actual breathing space. */
+  .main-area {
+    height:
+      calc(
+        100dvh -
+        56px -
+        74px -
+        env(safe-area-inset-bottom)
+      ) !important;
+    min-height: 0 !important;
+  }
+
+  .center-stage {
+    padding:
+      0 72px
+      38px !important;
+  }
+
+  .reply-shell {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .reply-text {
+    max-width:
+      calc(100vw - 154px) !important;
+    font-size:
+      clamp(
+        17px,
+        4.8vw,
+        23px
+      ) !important;
+  }
+
+  /* Play sits left without occupying half the phone. */
+  .zero64-play-orb {
+    position: fixed !important;
+    left: 8px !important;
+    top: 47% !important;
+    width: 58px !important;
+    min-height: 70px !important;
+    padding: 7px 4px !important;
+    border-radius: 19px !important;
+  }
+
+  .zero64-play-icon {
+    transform: scale(.73) !important;
+    margin: -3px 0 !important;
+  }
+
+  .zero64-play-orb strong {
+    margin-top: 2px !important;
+    font-size: 7px !important;
+  }
+
+  .zero64-play-orb small {
+    display: none !important;
+  }
+
+  /* Composer is a fixed comfortable bottom bar. */
+  .composer-wrap {
+    min-height: 68px !important;
+    padding:
+      6px 8px
+      calc(
+        7px +
+        env(safe-area-inset-bottom)
+      ) !important;
+  }
+
+  .composer-card {
+    min-height: 52px !important;
+    border-radius: 18px !important;
+  }
+
+  .composer-input {
+    font-size: 16px !important;
+  }
+
+  /* Modals use almost whole screen but no squished desktop grid. */
+  .zero-v5-core-panel {
+    max-height: 88dvh !important;
+  }
+
+  .zero63-shop,
+  .zero-wallet-screen,
+  .zero-settings,
+  .zero-arcade {
+    padding-left: 9px !important;
+    padding-right: 9px !important;
+  }
+
+  .zero-arcade-grid-v6 {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+  }
+
+  .zero-arcade-grid-v6 > button {
+    min-height: 100px !important;
+    border-radius: 18px !important;
+  }
+
+  .zero63-shop-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .zero63-shop-card {
+    width: 100% !important;
+  }
+}
+
+@media (max-width: 390px) {
+  .center-stage {
+    padding-left: 65px !important;
+    padding-right: 16px !important;
+  }
+
+  .reply-text {
+    max-width:
+      calc(100vw - 88px) !important;
+  }
+
+  .zero64-play-orb {
+    width: 52px !important;
+    min-height: 64px !important;
+  }
+
+  .zero63-core-entry {
+    width: 68px !important;
+    min-width: 68px !important;
+  }
+
+  .zero-arcade-grid-v6 {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr)) !important;
+  }
 }

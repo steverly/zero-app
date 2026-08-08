@@ -961,8 +961,6 @@ const followUpTimeoutRef = useRef(null);
     getWalletCoreMultiplier(wallet) > 1;
 
   const livingStatus = livingCoreLabel(livingCore, language);
-  const careProgress = getCareProgress(livingCore);
-  const zeroWants = getZeroWants(livingCore, language);
 
 
   
@@ -1390,8 +1388,13 @@ const handleRewardedAd = async () => {
   };
 
   const openArcadeFromHome = (gameId = "") => {
+    const safeGameId =
+      typeof gameId === "string"
+        ? gameId
+        : "";
+
     markHumanActivity();
-    setArcadeStartGame(gameId || "");
+    setArcadeStartGame(safeGameId);
     setCoreOpen(false);
     setShopOpen(false);
     setWalletOpen(false);
@@ -2275,7 +2278,7 @@ if (!appReady) {
           ? "Play with Zero"
           : "Jouer avec Zero"
     }
-    onClick={openArcadeFromHome}
+    onClick={() => openArcadeFromHome("")}
     whileTap={{ scale: 0.91 }}
     whileHover={{ scale: 1.04 }}
   >
@@ -2372,59 +2375,7 @@ if (!appReady) {
         ) : null}
       </AnimatePresence>
 
-      <motion.button
-        type="button"
-        className={[
-          "zero67-care",
-          careProgress.claimable > 0 ? "has-reward" : "",
-        ].filter(Boolean).join(" ")}
-        whileTap={{ scale: 0.96 }}
-        onClick={() => {
-          if (careProgress.claimable > 0) {
-            const result = claimCareReward(livingCore);
-            setLivingCore(result.state);
 
-            if (result.coins > 0) {
-              setWallet((previous) => ({
-                ...previous,
-                coins: Number(previous.coins || 0) + result.coins,
-              }));
-              gameSfx.coin();
-              setRewardToast(`+${result.coins} coins`);
-              window.setTimeout(() => setRewardToast(""), 1800);
-            }
-            return;
-          }
-
-          if (zeroWants.type === "play") {
-            openArcadeFromHome();
-          } else if (zeroWants.type === "talk") {
-            lastHumanActivityRef.current = Date.now() - 60000;
-            lastInitiativeRef.current = 0;
-            triggerZeroInitiative();
-          } else {
-            setCoreOpen(true);
-          }
-        }}
-      >
-        <span className="zero67-care-orb">
-          <span className="zero67-care-eyes"><i /><i /></span>
-        </span>
-
-        <span className="zero67-care-copy">
-          <strong>
-            CORE {careProgress.level}
-          </strong>
-          <small>{zeroWants.text}</small>
-          <span className="zero67-care-track">
-            <i style={{ width: `${careProgress.percent}%` }} />
-          </span>
-        </span>
-
-        <span className="zero67-care-plus">
-          {careProgress.claimable > 0 ? "!" : "›"}
-        </span>
-      </motion.button>
 
       <Composer
         value={input}

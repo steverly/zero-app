@@ -2041,8 +2041,16 @@ export default function ZeroArcade({
   language = "fr",
 }) {
   const copy = getZeroCopy(language);
+  const normalizeInitialGame = (value) =>
+    typeof value === "string" &&
+    ZERO_CONFIG.arcade.games[value]
+      ? value
+      : "";
+
   const [gameId, setGameId] =
-    useState(initialGameId || "");
+    useState(() =>
+      normalizeInitialGame(initialGameId)
+    );
 
   const [rewardFlash, setRewardFlash] =
     useState(null);
@@ -2053,9 +2061,9 @@ export default function ZeroArcade({
       return;
     }
 
-    if (initialGameId) {
-      setGameId(initialGameId);
-    }
+    setGameId(
+      normalizeInitialGame(initialGameId)
+    );
   }, [open, initialGameId]);
 
   const gameConfigs = useMemo(
