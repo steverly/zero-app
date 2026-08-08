@@ -2031,6 +2031,7 @@ function GameAgain({ onClick }) {
 
 export default function ZeroArcade({
   open,
+  initialGameId = "",
   relationship,
   economy,
   wallet,
@@ -2041,7 +2042,7 @@ export default function ZeroArcade({
 }) {
   const copy = getZeroCopy(language);
   const [gameId, setGameId] =
-    useState("");
+    useState(initialGameId || "");
 
   const [rewardFlash, setRewardFlash] =
     useState(null);
@@ -2049,8 +2050,13 @@ export default function ZeroArcade({
   useEffect(() => {
     if (!open) {
       setGameId("");
+      return;
     }
-  }, [open]);
+
+    if (initialGameId) {
+      setGameId(initialGameId);
+    }
+  }, [open, initialGameId]);
 
   const gameConfigs = useMemo(
     () =>

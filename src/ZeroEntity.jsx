@@ -30,6 +30,7 @@ export default function ZeroEntity({
   relationship,
   feedPulse = 0,
   language = "fr",
+  away = false,
 }) {
   const idleTimerRef = useRef(null);
   const microTimerRef = useRef(null);
@@ -561,6 +562,10 @@ export default function ZeroEntity({
 
   let visualAction = safeVisual.action;
 
+  if (away) {
+    visualAction = "none";
+  }
+
   if (
     visualAction === "none" &&
     lifeMode !== "none"
@@ -610,6 +615,7 @@ export default function ZeroEntity({
       className={[
         "zero-entity",
         awake ? "is-awake" : "is-sleeping",
+        away ? "is-away" : "",
         typing ? "is-listening" : "",
         loading ? "is-thinking" : "",
         near ? "is-near" : "",
@@ -632,7 +638,7 @@ export default function ZeroEntity({
 
       <div className="zero-entity-motion">
         <ZeroEyes
-          mood={safeVisual.mood}
+          mood={away ? "idle" : safeVisual.mood}
           action={visualAction}
         />
 

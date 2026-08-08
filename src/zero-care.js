@@ -28,12 +28,107 @@ const L={
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 export function chooseZeroImpulse(v,language="fr",relationship=null){
   if(Date.now()-Number(v.lastImpulseAt||0)<75000)return null;
+
+  const energy=
+    Number(relationship?.totalEnergy||0);
+
+  const games=[
+    ["tictactoe",0],
+    ["reflex",0],
+    ["rps",5],
+    ["connect4",18],
+    ["memory",32],
+    ["tapduel",48],
+    ["secret",72],
+    ["codebreaker",105],
+  ].filter(([,unlock])=>energy>=unlock);
+
+  const gameNames={
+    fr:{
+      tictactoe:"morpion",
+      reflex:"réflexes",
+      rps:"pierre feuille ciseaux",
+      connect4:"puissance 4",
+      memory:"mémoire",
+      tapduel:"tap duel",
+      secret:"nombre secret",
+      codebreaker:"codebreaker",
+    },
+    en:{
+      tictactoe:"tic tac toe",
+      reflex:"reflex",
+      rps:"rock paper scissors",
+      connect4:"connect four",
+      memory:"memory",
+      tapduel:"tap duel",
+      secret:"secret number",
+      codebreaker:"codebreaker",
+    },
+    id:{
+      tictactoe:"tic tac toe",
+      reflex:"refleks",
+      rps:"batu gunting kertas",
+      connect4:"connect four",
+      memory:"memory",
+      tapduel:"tap duel",
+      secret:"angka rahasia",
+      codebreaker:"codebreaker",
+    }
+  };
+
   const l=L[language]||L.fr;
-  const games=Number(relationship?.gameProfile?.gamesPlayed||0);
-  const p=.28+v.playUrge/190+Math.min(.14,games/100);
+  const p=.28+v.playUrge/190+Math.min(.14,Number(relationship?.gameProfile?.gamesPlayed||0)/100);
+
   let type=Math.random()<p?"play":"talk";
-  if(v.recent?.slice(-2).every(x=>x===type))type=type==="play"?"talk":"play";
-  return {id:String(Date.now()),type,text:pick(l[type])};
+
+  if(v.recent?.slice(-2).every(x=>x===type)){
+    type=type==="play"?"talk":"play";
+  }
+
+  if(type==="play"){
+    const picked=
+      games[Math.floor(Math.random()*games.length)]?.[0] ||
+      "tictactoe";
+
+    const name=
+      (gameNames[language]||gameNames.fr)[picked];
+
+    const variants={
+      fr:[
+        `eh viens ${name}`,
+        `viens on fait ${name}`,
+        `att viens me battre à ${name}`,
+        `jveux ma revanche à ${name}`,
+      ],
+      en:[
+        `yo come play ${name}`,
+        `come on ${name}`,
+        `come beat me at ${name}`,
+        `I want my ${name} rematch`,
+      ],
+      id:[
+        `eh ayo ${name}`,
+        `sini main ${name}`,
+        `ayo lawan gue di ${name}`,
+        `gue mau rematch ${name}`,
+      ],
+    };
+
+    const bank=variants[language]||variants.fr;
+
+    return {
+      id:String(Date.now()),
+      type:"play",
+      gameId:picked,
+      text:pick(bank),
+    };
+  }
+
+  return {
+    id:String(Date.now()),
+    type:"talk",
+    text:pick(l.talk),
+  };
 }
 export function markImpulseShown(v,x){return {...v,lastImpulseAt:Date.now(),recent:[...(v.recent||[]),x.type].slice(-5)}}
 export function livingCoreLabel(v,language="fr"){

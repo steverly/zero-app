@@ -55,6 +55,13 @@ import {
 import { gameSfx } from "./zero-game-sfx";
 import { zeroAudio } from "./zero-audio";
 import { getZeroCopy } from "./zero-i18n";
+import {
+  loadBoundaryState,
+  saveBoundaryState,
+  updateBoundaryFromSignals,
+  attemptReconcile,
+  departureLine,
+} from "./zero-boundaries";
 import { loadLivingCore, saveLivingCore, recordLivingChat, recordLivingGame, chooseZeroImpulse, markImpulseShown, livingCoreLabel, getCareProgress, addCareXP, claimCareReward, getZeroWants } from "./zero-care";
 import "./zero-v5.css";
 
@@ -844,11 +851,13 @@ export default function App() {
   const [relationship, setRelationship] = useState(() => loadRelationship());
   const [livingCore, setLivingCore] = useState(() => loadLivingCore());
   const [zeroImpulse, setZeroImpulse] = useState(null);
+  const [boundaryState, setBoundaryState] = useState(() => loadBoundaryState());
   const [economy, setEconomy] = useState(() => loadEconomy());
   const [wallet, setWallet] = useState(() => loadWallet());
 
   const [coreOpen, setCoreOpen] = useState(false);
   const [arcadeOpen, setArcadeOpen] = useState(false);
+  const [arcadeStartGame, setArcadeStartGame] = useState("");
   const [shopOpen, setShopOpen] = useState(false);
   const [walletOpen, setWalletOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -992,6 +1001,10 @@ const followUpTimeoutRef = useRef(null);
   useEffect(() => {
     saveLivingCore(livingCore);
   }, [livingCore]);
+
+  useEffect(() => {
+    saveBoundaryState(boundaryState);
+  }, [boundaryState]);
 
   useEffect(() => {
     saveEconomy(economy);
@@ -1376,8 +1389,9 @@ const handleRewardedAd = async () => {
     lastHumanActivityRef.current = Date.now();
   };
 
-  const openArcadeFromHome = () => {
+  const openArcadeFromHome = (gameId = "") => {
     markHumanActivity();
+    setArcadeStartGame(gameId || "");
     setCoreOpen(false);
     setShopOpen(false);
     setWalletOpen(false);
@@ -1395,6 +1409,42 @@ const handleRewardedAd = async () => {
 
   markHumanActivity();
   setZeroImpulse(null);
+
+  if (boundaryState.mode === "away") {
+    const result =
+      attemptReconcile(
+        boundaryState,
+        clean,
+        language
+      );
+
+    setBoundaryState(result.state);
+    setInput("");
+
+    if (result.line) {
+      setReply(result.line);
+      setMood(
+        result.accepted
+          ? "warm"
+          : "idle"
+      );
+      gameSfx.soft();
+    } else {
+      setReply("");
+    }
+
+    if (result.accepted) {
+      window.setTimeout(() => {
+        setBoundaryState((previous) => ({
+          ...previous,
+          mode: "normal",
+        }));
+        setMood("idle");
+      }, 2300);
+    }
+
+    return;
+  }
 
 if (!isPremium && messagesLeft <= 0) {
   setLoading(true);
@@ -1433,11 +1483,43 @@ setFlyingId((prev) => prev + 1);
       zeroState,
       relationship: getServerRelationshipContext(relationship, selectedLanguage),
     });
-setReply(data.reply);
+const nextBoundary =
+  updateBoundaryFromSignals(
+    boundaryState,
+    {
+      disrespect:
+        Number(data.signals?.disrespect || 0),
+      interactionQuality:
+        Number(data.signals?.interactionQuality || 0.4),
+      humor:
+        Number(data.signals?.humor || 0.1),
+      userMessage: clean,
+    }
+  );
+
+const justLeft =
+  boundaryState.mode !== "away" &&
+  nextBoundary.mode === "away";
+
+setBoundaryState(nextBoundary);
+
+setReply(
+  justLeft
+    ? departureLine(
+        language,
+        nextBoundary.severity
+      )
+    : data.reply
+);
+
 setEmotion(data.emotion);
 if (data.state) setZeroState(data.state);
 
-setZeroAction(data.action || "none");
+setZeroAction(
+  justLeft
+    ? "refuse"
+    : data.action || "none"
+);
 
 setRelationship((previous) =>
   evolveRelationship(previous, {
@@ -1493,7 +1575,14 @@ if (
 
 const e = data.emotion;
 
-if (data.action === "refuse" || e.annoyance > 0.9) {
+if (justLeft) {
+  setMood("annoyed");
+  gameSfx.error();
+
+  window.setTimeout(() => {
+    setMood("idle");
+  }, 1500);
+} else if (data.action === "refuse" || e.annoyance > 0.9) {
   setMood("annoyed");
 } else if (data.action === "laugh" || e.humor > 0.72) {
   setMood("funny");
@@ -1595,7 +1684,8 @@ const triggerZeroInitiative = async () => {
     walletOpen ||
     settingsOpen ||
     paywallOpen ||
-    premiumOpen
+    premiumOpen ||
+    boundaryState.mode === "away"
   ) {
     return;
   }
@@ -2220,6 +2310,7 @@ if (!appReady) {
   relationship={relationship}
   feedPulse={feedPulse}
   language={language}
+  away={boundaryState.mode === "away"}
 />
 
 
@@ -2253,7 +2344,9 @@ if (!appReady) {
                 markHumanActivity();
 
                 if (impulse.type === "play") {
-                  openArcadeFromHome();
+                  openArcadeFromHome(
+                    impulse.gameId || ""
+                  );
                   return;
                 }
 
@@ -2389,11 +2482,15 @@ if (!appReady) {
   {arcadeOpen ? (
     <ZeroArcade
       open={arcadeOpen}
+      initialGameId={arcadeStartGame}
       relationship={relationship}
       economy={economy}
       wallet={wallet}
       isPremium={isPremium}
-      onClose={() => setArcadeOpen(false)}
+      onClose={() => {
+        setArcadeOpen(false);
+        setArcadeStartGame("");
+      }}
       onGameFinish={handleGameFinish}
       language={language}
     />
