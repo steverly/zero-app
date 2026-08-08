@@ -10514,3 +10514,185 @@ small {
 .zero66-impulse {
   display: none !important;
 }
+
+
+/* =========================================================
+   ZERO V7.3 — BLOCK / APOLOGY / FAST COOLDOWN
+   ========================================================= */
+
+.zero72-away-status {
+  overflow: hidden;
+}
+
+.zero73-block-time {
+  font-variant-numeric: tabular-nums;
+}
+
+.zero73-block-track {
+  width: min(250px, 72vw);
+  height: 4px;
+
+  margin: 9px auto 0;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background:
+    rgba(255,255,255,.055);
+}
+
+.zero73-block-track i {
+  display: block;
+
+  width:
+    var(--zero73-block, 100%);
+
+  height: 100%;
+
+  border-radius: inherit;
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(190,135,124,.55),
+      rgba(237,190,151,.75)
+    );
+
+  transition:
+    width 140ms linear;
+}
+
+.zero72-away-status.is-accelerating {
+  border-color:
+    rgba(245,196,151,.24);
+
+  background:
+    radial-gradient(
+      circle at 50% 120%,
+      rgba(234,177,131,.14),
+      transparent 65%
+    ),
+    rgba(50,40,43,.40);
+
+  animation:
+    zero73-reconcile-card
+    .46s
+    ease-in-out
+    infinite alternate;
+}
+
+.zero72-away-status.is-accelerating
+.zero73-block-track {
+  box-shadow:
+    0 0 18px
+    rgba(239,188,142,.12);
+}
+
+.zero72-away-status.is-accelerating
+.zero73-block-track i {
+  background:
+    linear-gradient(
+      90deg,
+      #ddaa82,
+      #f3d1a8,
+      #b9abd9
+    );
+
+  box-shadow:
+    0 0 12px
+    rgba(245,203,161,.24);
+}
+
+.zero72-away-status.is-accelerating::before,
+.zero72-away-status.is-accelerating::after {
+  content: "";
+
+  position: absolute;
+
+  width: 5px;
+  height: 5px;
+
+  border-radius: 50%;
+
+  background:
+    rgba(247,217,182,.68);
+
+  box-shadow:
+    0 0 10px
+    rgba(245,194,148,.25);
+
+  animation:
+    zero73-reconcile-spark
+    .7s
+    ease-out
+    infinite;
+}
+
+.zero72-away-status.is-accelerating::before {
+  left: 15%;
+  bottom: 13px;
+}
+
+.zero72-away-status.is-accelerating::after {
+  right: 15%;
+  bottom: 20px;
+  animation-delay: -.32s;
+}
+
+@keyframes zero73-reconcile-card {
+  from {
+    transform: scale(.995);
+  }
+
+  to {
+    transform: scale(1.01);
+  }
+}
+
+@keyframes zero73-reconcile-spark {
+  0% {
+    opacity: 0;
+    transform:
+      translateY(5px)
+      scale(.5);
+  }
+
+  40% {
+    opacity: .9;
+  }
+
+  100% {
+    opacity: 0;
+    transform:
+      translateY(-20px)
+      scale(1.1);
+  }
+}
+
+/* Eyes subtly react during accelerated reconciliation. */
+.app:has(.zero72-away-status.is-accelerating)
+.zero-entity.is-away
+.zero-eye-stroke--a {
+  animation:
+    zero73-eye-return
+    .7s
+    ease-in-out
+    infinite alternate !important;
+}
+
+@keyframes zero73-eye-return {
+  from {
+    opacity: .48;
+    transform:
+      rotate(0deg)
+      scaleY(.30) !important;
+  }
+
+  to {
+    opacity: .78;
+    transform:
+      rotate(0deg)
+      scaleY(.48) !important;
+  }
+}

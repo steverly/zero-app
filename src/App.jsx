@@ -62,7 +62,9 @@ import {
   saveBoundaryState,
   updateBoundaryFromSignals,
   attemptReconcile,
+  finishReconciliation,
   departureLine,
+  boundarySnarkLine,
 } from "./zero-boundaries";
 import { loadLivingCore, saveLivingCore, recordLivingChat, recordLivingGame, chooseZeroImpulse, markImpulseShown, livingCoreLabel, getCareProgress, addCareXP, claimCareReward, getZeroWants } from "./zero-care";
 import "./zero-v5.css";
@@ -376,6 +378,8 @@ function CenterReply({
   away = false,
   awaySeconds = 0,
   awayCopy = null,
+  awayAccelerating = false,
+  reconciliationStage = 0,
 }) {
   useEffect(() => {
     if (reply && !loading) {
@@ -542,14 +546,53 @@ function CenterReply({
             ) : null}
 
             {away ? (
-              <div className="zero72-away-status">
+              <div
+                className={[
+                  "zero72-away-status",
+                  awayAccelerating
+                    ? "is-accelerating"
+                    : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+              >
                 <strong>{awayCopy?.title}</strong>
-                <span>
-                  {awaySeconds > 0
-                    ? `${awayCopy?.wait} · ${awaySeconds}s`
-                    : awayCopy?.apology}
+
+                <span className="zero73-block-time">
+                  {awayAccelerating
+                    ? awayCopy?.accelerating
+                    : `${awayCopy?.wait} · ${awaySeconds}s`}
                 </span>
-                <small>{awayCopy?.apology}</small>
+
+                <div className="zero73-block-track">
+                  <i
+                    style={{
+                      "--zero73-block":
+                        `${Math.max(
+                          0,
+                          Math.min(
+                            100,
+                            awayAccelerating
+                              ? (1 -
+                                  Math.min(
+                                    1,
+                                    awaySeconds / 5
+                                  )) *
+                                100
+                              : 100
+                          )
+                        )}%`,
+                    }}
+                  />
+                </div>
+
+                <small>
+                  {reconciliationStage === 1
+                    ? awayCopy?.sure
+                    : awayAccelerating
+                      ? "..."
+                      : awayCopy?.apology}
+                </small>
               </div>
             ) : null}
           </motion.div>
@@ -1035,27 +1078,33 @@ const followUpTimeoutRef = useRef(null);
 
   const awayCopy = {
     fr: {
-      title: "Zero veut être tranquille",
-      wait: "laisse-lui un peu de temps",
-      apology: "si tu veux réparer, excuse-toi",
+      title: "Zero t'a bloqué",
+      wait: "blocage",
+      apology: "excuse-toi pour essayer d'arranger ça",
+      accelerating: "il écourte le blocage",
+      sure: "il attend que tu confirmes",
       yes: "OUI",
       no: "NON",
       talkYes: "VAS-Y",
       talkNo: "PLUS TARD",
     },
     en: {
-      title: "Zero wants some space",
-      wait: "give him a little time",
-      apology: "if you want to fix it, apologize",
+      title: "Zero blocked you",
+      wait: "blocked",
+      apology: "apologize if you want to fix it",
+      accelerating: "he's shortening the block",
+      sure: "he's waiting for you to confirm it",
       yes: "YES",
       no: "NO",
       talkYes: "GO ON",
       talkNo: "LATER",
     },
     id: {
-      title: "Zero lagi mau sendiri",
-      wait: "kasih dia waktu bentar",
-      apology: "kalau mau baikan, minta maaf",
+      title: "Zero ngeblok kamu",
+      wait: "diblokir",
+      apology: "minta maaf kalau mau baikan",
+      accelerating: "dia mempercepat blokirnya",
+      sure: "dia nunggu kamu beneran konfirmasi",
       yes: "IYA",
       no: "NGGAK",
       talkYes: "AYO",
@@ -1110,11 +1159,36 @@ const followUpTimeoutRef = useRef(null);
     if (boundaryState.mode !== "away") return undefined;
 
     const timer = window.setInterval(() => {
-      setBoundaryTick(Date.now());
-    }, 500);
+      const now = Date.now();
+      setBoundaryTick(now);
+
+      if (
+        boundaryState.accelerating &&
+        now >= Number(boundaryState.awayUntil || 0)
+      ) {
+        setBoundaryState((previous) =>
+          finishReconciliation(previous)
+        );
+
+        setMood("warm");
+        gameSfx.unlock();
+
+        window.setTimeout(() => {
+          setBoundaryState((previous) => ({
+            ...previous,
+            mode: "normal",
+          }));
+          setMood("idle");
+        }, 1200);
+      }
+    }, 120);
 
     return () => window.clearInterval(timer);
-  }, [boundaryState.mode]);
+  }, [
+    boundaryState.mode,
+    boundaryState.accelerating,
+    boundaryState.awayUntil,
+  ]);
 
   useEffect(() => {
     saveEconomy(economy);
@@ -1557,14 +1631,9 @@ const handleRewardedAd = async () => {
       setReply("");
     }
 
-    if (result.accepted) {
-      window.setTimeout(() => {
-        setBoundaryState((previous) => ({
-          ...previous,
-          mode: "normal",
-        }));
-        setMood("idle");
-      }, 2300);
+    if (result.accelerated) {
+      setMood("warm");
+      gameSfx.unlock();
     }
 
     return;
@@ -1627,13 +1696,31 @@ const justLeft =
 
 setBoundaryState(nextBoundary);
 
+const rawReply =
+  String(data.reply || "").trim();
+
+const hostileButStillTalking =
+  !justLeft &&
+  Number(data.signals?.disrespect || 0) > 0.48;
+
+const collapsedReply =
+  rawReply === "..." ||
+  rawReply === "…" ||
+  rawReply.length === 0;
+
 setReply(
   justLeft
     ? departureLine(
         language,
         nextBoundary.severity
       )
-    : data.reply
+    : hostileButStillTalking &&
+      collapsedReply
+      ? boundarySnarkLine(
+          language,
+          nextBoundary.consecutive
+        )
+      : data.reply
 );
 
 setEmotion(data.emotion);
@@ -1648,7 +1735,19 @@ setZeroAction(
 setRelationship((previous) =>
   evolveRelationship(previous, {
     userMessage: clean,
-    reply: data.reply,
+    reply:
+      justLeft
+        ? departureLine(
+            language,
+            nextBoundary.severity
+          )
+        : hostileButStillTalking &&
+          collapsedReply
+          ? boundarySnarkLine(
+              language,
+              nextBoundary.consecutive
+            )
+          : data.reply,
     signals: data.signals,
     memoryCandidate: data.memoryCandidate,
     usedMemoryId: data.usedMemoryId,
@@ -2500,6 +2599,10 @@ if (!appReady) {
     away={boundaryState.mode === "away"}
     awaySeconds={boundaryRemainingSeconds}
     awayCopy={awayCopy}
+    awayAccelerating={Boolean(boundaryState.accelerating)}
+    reconciliationStage={Number(
+      boundaryState.reconciliationStage || 0
+    )}
   />
   </div>
 </main>
