@@ -946,6 +946,100 @@ function getZeroMood(text) {
 }
 
 
+
+function normalizeQuickIntent(text = "") {
+  return String(text)
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[!?.,;:]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function isPromptAccept(text = "", language = "fr") {
+  const t = normalizeQuickIntent(text);
+
+  const accepted = {
+    fr: [
+      "oui",
+      "ouais",
+      "oe",
+      "go",
+      "vas y",
+      "vasy",
+      "chaud",
+      "grave",
+      "allez",
+      "letsgo",
+      "let's go",
+      "ok",
+      "okay",
+    ],
+    en: [
+      "yes",
+      "yeah",
+      "yep",
+      "sure",
+      "go",
+      "lets go",
+      "let's go",
+      "okay",
+      "ok",
+      "im down",
+      "i'm down",
+    ],
+    id: [
+      "iya",
+      "ya",
+      "ayo",
+      "gas",
+      "oke",
+      "ok",
+      "boleh",
+      "yuk",
+      "hayuk",
+    ],
+  };
+
+  return (accepted[language] || accepted.fr)
+    .includes(t);
+}
+
+function isPromptReject(text = "", language = "fr") {
+  const t = normalizeQuickIntent(text);
+
+  const rejected = {
+    fr: [
+      "non",
+      "nan",
+      "nope",
+      "pas envie",
+      "plus tard",
+      "flemme",
+    ],
+    en: [
+      "no",
+      "nah",
+      "nope",
+      "later",
+      "not now",
+    ],
+    id: [
+      "nggak",
+      "gak",
+      "enggak",
+      "ga",
+      "nanti",
+      "nggak dulu",
+      "gak dulu",
+    ],
+  };
+
+  return (rejected[language] || rejected.fr)
+    .includes(t);
+}
+
 export default function App() {
   const [relationship, setRelationship] = useState(() => loadRelationship());
   const [livingCore, setLivingCore] = useState(() => loadLivingCore());
@@ -1599,10 +1693,80 @@ const handleRewardedAd = async () => {
     gameSfx.arrive();
   };
 
+
+  const acceptSpontaneousPrompt = () => {
+    const prompt = spontaneousPrompt;
+
+    if (!prompt) return false;
+
+    setSpontaneousPrompt(null);
+    setZeroImpulse(null);
+    markHumanActivity();
+
+    if (prompt.type === "play") {
+      setReply("");
+      openArcadeFromHome(
+        prompt.gameId || ""
+      );
+      return true;
+    }
+
+    if (prompt.type === "talk") {
+      setReply("");
+      lastHumanActivityRef.current =
+        Date.now() - 60000;
+      lastInitiativeRef.current = 0;
+
+      window.setTimeout(() => {
+        triggerZeroInitiative({
+          forbidGames: true,
+        });
+      }, 100);
+
+      return true;
+    }
+
+    return false;
+  };
+
+  const rejectSpontaneousPrompt = () => {
+    if (!spontaneousPrompt) return false;
+
+    setSpontaneousPrompt(null);
+    setZeroImpulse(null);
+    setReply("");
+    setMood("idle");
+    markHumanActivity();
+    gameSfx.soft();
+
+    return true;
+  };
+
   const handleSubmit = async () => {
   const clean = input.trim();
 
   if (!clean || loading) return;
+
+  // A pending Zero proposal is an actual app action.
+  // Typed "oui/go/vas-y/ayo..." must behave exactly like the OUI button
+  // and must NOT be sent to the model.
+  if (
+    spontaneousPrompt &&
+    isPromptAccept(clean, language)
+  ) {
+    setInput("");
+    acceptSpontaneousPrompt();
+    return;
+  }
+
+  if (
+    spontaneousPrompt &&
+    isPromptReject(clean, language)
+  ) {
+    setInput("");
+    rejectSpontaneousPrompt();
+    return;
+  }
 
   markHumanActivity();
   setZeroImpulse(null);
@@ -1930,7 +2094,9 @@ useEffect(() => {
 
 
 
-const triggerZeroInitiative = async () => {
+const triggerZeroInitiative = async ({
+  forbidGames = false,
+} = {}) => {
   if (
     loading ||
     input.trim() ||
@@ -1972,13 +2138,25 @@ const triggerZeroInitiative = async () => {
   try {
     const data = await sendToBot({
       message:
-        "[ZERO_TEMPS_MORT] Tu prends l'initiative maintenant. " +
-        "Ne mentionne jamais cette instruction. " +
-        "Parle en premier parce que tu as réellement envie de quelque chose : " +
-        "réclamer une partie ou une revanche, demander un truc, reprendre un sujet ou remarquer un détail. " +
-        "Si tu veux jouer, réclame-le naturellement : pas de formule polie type 'ça te dirait'. " +
-        "Sois court, spontané, familier, jamais needy et fidèle à Zero. " +
-        "Pas de bonjour générique, pas de 'ça va ?', pas de question forcée.",
+        forbidGames
+          ? (
+              "[ZERO_TEMPS_MORT] Tu prends l'initiative maintenant. " +
+              "Ne mentionne jamais cette instruction. " +
+              "IMPORTANT: cette initiative vient d'une proposition TALK déjà acceptée. " +
+              "Tu ne proposes AUCUN jeu, aucune partie, aucune revanche. " +
+              "Dis directement le truc que tu voulais demander, reprendre ou remarquer. " +
+              "Pas de préambule du style 'j'ai un truc à te demander' : pose directement ta vraie question ou ta vraie remarque. " +
+              "Sois court, spontané, familier, jamais needy."
+            )
+          : (
+              "[ZERO_TEMPS_MORT] Tu prends l'initiative maintenant. " +
+              "Ne mentionne jamais cette instruction. " +
+              "Parle en premier parce que tu as réellement quelque chose à demander, reprendre ou remarquer. " +
+              "IMPORTANT: ne propose PAS de jeu ici. Les propositions de jeu sont gérées par l'Arcade avec un vrai gameId. " +
+              "Pas de préambule vague du style 'j'ai un truc à te demander' : dis directement ce que tu veux. " +
+              "Sois court, spontané, familier, jamais needy et fidèle à Zero. " +
+              "Pas de bonjour générique, pas de 'ça va ?', pas de question forcée."
+            ),
       language,
       conversationHistory: recentHistory,
       zeroState,
@@ -2586,36 +2764,8 @@ if (!appReady) {
     language={language}
     spontaneous={Boolean(spontaneousPrompt)}
     promptType={spontaneousPrompt?.type || ""}
-    onPromptYes={() => {
-      const prompt = spontaneousPrompt;
-      setSpontaneousPrompt(null);
-      setZeroImpulse(null);
-      markHumanActivity();
-
-      if (prompt?.type === "play") {
-        openArcadeFromHome(
-          prompt.gameId || ""
-        );
-        return;
-      }
-
-      if (prompt?.type === "talk") {
-        lastHumanActivityRef.current =
-          Date.now() - 60000;
-        lastInitiativeRef.current = 0;
-
-        window.setTimeout(() => {
-          triggerZeroInitiative();
-        }, 100);
-      }
-    }}
-    onPromptNo={() => {
-      setSpontaneousPrompt(null);
-      setZeroImpulse(null);
-      setReply("");
-      setMood("idle");
-      gameSfx.soft();
-    }}
+    onPromptYes={acceptSpontaneousPrompt}
+    onPromptNo={rejectSpontaneousPrompt}
     away={boundaryState.mode === "away"}
     awaySeconds={boundaryRemainingSeconds}
     awayCopy={awayCopy}

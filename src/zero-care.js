@@ -21,9 +21,9 @@ export function recordLivingGame(v,result=""){
   return {...v,bond:clamp(v.bond+(result==="win"?3.8:3.1)),curiosity:clamp(v.curiosity+2),playUrge:clamp(v.playUrge-14),sharedMoments:v.sharedMoments+1,lastGameResult:result,lastInteractionAt:Date.now()};
 }
 const L={
- fr:{play:["eh viens jouer","viens on joue","att viens me battre","eh jveux ma revanche","nan viens jouer là"],talk:["eh j'ai un truc à te demander","att jpensais à un truc","viens j'ai une question","eh attends","j'ai un truc en tête là"]},
- en:{play:["yo come play","nah come play me","come on one game","yo I want my rematch","arcade. now."],talk:["yo I gotta ask you something","wait I was thinking about something","come here I got a question","hold on","I got something on my mind"]},
- id:{play:["eh ayo main","sini main dulu","ayo lawan gue","eh gue mau rematch","arcade bentar sini"],talk:["eh gue mau nanya sesuatu","bentar gue kepikiran sesuatu","sini gue ada pertanyaan","eh bentar","gue lagi kepikiran sesuatu"]}
+ fr:{play:["eh viens jouer","viens on joue","att viens me battre","eh jveux ma revanche","nan viens jouer là"],talk:["att jveux ton avis sur un truc","eh jviens de penser à un truc","att réponds-moi à ça","viens deux sec jveux savoir un truc","eh j'ai repensé à un truc"]},
+ en:{play:["yo come play","nah come play me","come on one game","yo I want my rematch","arcade. now."],talk:["wait I want your take on something","yo I just thought of something","answer me this real quick","come here I wanna know something","wait I remembered something"]},
+ id:{play:["eh ayo main","sini main dulu","ayo lawan gue","eh gue mau rematch","arcade bentar sini"],talk:["bentar gue mau tau pendapat lu","eh gue baru kepikiran sesuatu","jawab ini bentar","sini gue pengen tau sesuatu","bentar gue keinget sesuatu"]}
 };
 const pick=a=>a[Math.floor(Math.random()*a.length)];
 export function chooseZeroImpulse(v,language="fr",relationship=null){
