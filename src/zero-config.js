@@ -1,6 +1,16 @@
 // ZERO V6 — produit, économie et arcade centralisés ici.
 
 export const ZERO_CONFIG = Object.freeze({
+  // TEST MODE stays active even on a Vercel production build.
+  // Set this to false only for the real native release.
+  testMode: true,
+
+  initiative: Object.freeze({
+    enabled: true,
+    minSilenceMs: 42000,
+    sessionMax: 2,
+    cooldownMs: 300000,
+  }),
   apiBase: "https://zero-app-ebsv.onrender.com",
 
   chat: {

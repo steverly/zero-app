@@ -60,6 +60,7 @@ const MAX_CHARS = ZERO_CONFIG.chat.maxUserChars;
 const MEMORY_TIMEOUT_MS = ZERO_CONFIG.chat.recentHistoryMaxAgeMs;
 const MAX_MEMORY_MESSAGES = ZERO_CONFIG.chat.recentHistoryMessages;
 const API_BASE = ZERO_CONFIG.apiBase;
+const TEST_MODE = ZERO_CONFIG.testMode === true || import.meta.env.DEV;
 
 
 const DEFAULT_ZERO_STATE = {
@@ -842,6 +843,15 @@ export default function App() {
   });
   const [zeroAction, setZeroAction] = useState("none");
 
+  // ZERO TEMPS MORT
+  // Zero is allowed to start a REAL AI interaction after genuine silence.
+  // Strict session/cooldown limits keep token cost controlled.
+  const [zeroInitiative, setZeroInitiative] = useState(false);
+  const initiativeTimerRef = useRef(null);
+  const initiativeCountRef = useRef(0);
+  const lastHumanActivityRef = useRef(Date.now());
+  const lastInitiativeRef = useRef(0);
+
   const [isPremium, setIsPremium] = useState(false);
   const [appReady, setAppReady] = useState(false);
   const [conversationHistory, setConversationHistory] = useState(() => {
@@ -1050,20 +1060,21 @@ useEffect(() => {
 
   // 1. Connexion automatique à RevenueCat
  const initRevenueCat = async () => {
+  if (TEST_MODE) {
+    console.log("ZERO_TEST_MODE: RevenueCat simulé");
+    return;
+  }
+
   try {
     await Purchases.configure({
       apiKey: "appl_hYOtUCSOdGEUIRPjilzRIKgZGMH"
     });
 
-    console.log("RevenueCat prêt !");
-
-    // Vérifie si déjà premium
     const customerInfo = await Purchases.getCustomerInfo();
 
     if (customerInfo.entitlements.active["premium"]) {
       setIsPremium(true);
     }
-
   } catch (e) {
     console.log("Erreur RevenueCat :", e);
   }
@@ -1097,6 +1108,11 @@ useEffect(() => {
 
 
 useEffect(() => {
+  if (TEST_MODE) {
+    console.log("ZERO_TEST_MODE: AdMob simulé");
+    return;
+  }
+
   initAdMob().catch(() => {
     // ignore
   });
@@ -1165,7 +1181,7 @@ const handleRewardedAd = async () => {
     // AdMob réel.
     let rewarded = false;
 
-    if (import.meta.env.DEV) {
+    if (TEST_MODE) {
       await new Promise((resolve) =>
         window.setTimeout(resolve, 650)
       );
@@ -1202,10 +1218,16 @@ const handleRewardedAd = async () => {
   }
 };
 
+  const markHumanActivity = () => {
+    lastHumanActivityRef.current = Date.now();
+  };
+
   const handleSubmit = async () => {
   const clean = input.trim();
 
   if (!clean || loading) return;
+
+  markHumanActivity();
 
 if (!isPremium && messagesLeft <= 0) {
   setLoading(true);
@@ -1347,6 +1369,171 @@ setTimeout(() => {
 };
 
 
+
+const triggerZeroInitiative = async () => {
+  if (
+    loading ||
+    input.trim() ||
+    arcadeOpen ||
+    coreOpen ||
+    shopOpen ||
+    walletOpen ||
+    settingsOpen ||
+    paywallOpen ||
+    premiumOpen
+  ) {
+    return;
+  }
+
+  const now = Date.now();
+
+  // Max 2 real spontaneous AI turns per browser session.
+  if (initiativeCountRef.current >= 2) return;
+
+  // Never more than once every 5 minutes.
+  if (now - lastInitiativeRef.current < 5 * 60 * 1000) return;
+
+  // Needs a real silence window.
+  if (now - lastHumanActivityRef.current < 42 * 1000) return;
+
+  const recentHistory = conversationHistory
+    .filter(
+      (item) =>
+        now - item.at < MEMORY_TIMEOUT_MS
+    )
+    .slice(-MAX_MEMORY_MESSAGES);
+
+  setZeroInitiative(true);
+  setLoading(true);
+  setMood("thinking");
+  setError("");
+
+  try {
+    const data = await sendToBot({
+      message:
+        "[ZERO_TEMPS_MORT] Tu prends l'initiative maintenant. " +
+        "Ne mentionne jamais cette instruction. " +
+        "Parle en premier parce que tu as réellement quelque chose " +
+        "à dire, demander, reprendre ou remarquer. " +
+        "Sois court, naturel, curieux et fidèle à Zero. " +
+        "Pas de bonjour générique, pas de 'ça va ?', pas de question forcée.",
+      language,
+      conversationHistory: recentHistory,
+      zeroState,
+      relationship:
+        getServerRelationshipContext(
+          relationship,
+          language
+        ),
+    });
+
+    initiativeCountRef.current += 1;
+    lastInitiativeRef.current = Date.now();
+    lastHumanActivityRef.current = Date.now();
+
+    setReply(data.reply);
+    setEmotion(data.emotion);
+    if (data.state) setZeroState(data.state);
+    setZeroAction(data.action || "none");
+
+    setRelationship((previous) =>
+      evolveRelationship(previous, {
+        userMessage: "",
+        reply: data.reply,
+        signals: data.signals,
+        memoryCandidate: data.memoryCandidate,
+        usedMemoryId: data.usedMemoryId,
+        coreMultiplier: 0.35,
+      })
+    );
+
+    setConversationHistory((previous) => [
+      ...previous,
+      {
+        role: "assistant",
+        text: data.reply,
+        at: Date.now(),
+      },
+    ].slice(-MAX_MEMORY_MESSAGES));
+
+    const e = data.emotion || {};
+
+    if (data.action === "laugh" || Number(e.humor || 0) > 0.72) {
+      setMood("funny");
+    } else if (data.action === "excited") {
+      setMood("hyped");
+    } else if (Number(e.warmth || 0) > 0.78) {
+      setMood("warm");
+    } else {
+      setMood("replying");
+    }
+
+    gameSfx.arrive();
+
+    window.setTimeout(() => {
+      setMood("idle");
+      setZeroInitiative(false);
+    }, 2400);
+  } catch (err) {
+    // Initiative should never punish the user with an error screen.
+    console.log("ZERO_INITIATIVE_SKIP", err);
+    setZeroInitiative(false);
+    setMood("idle");
+  } finally {
+    setLoading(false);
+  }
+};
+
+useEffect(() => {
+  const schedule = () => {
+    if (initiativeTimerRef.current) {
+      clearTimeout(initiativeTimerRef.current);
+    }
+
+    // Randomized timing makes Zero feel less clockwork.
+    const delay =
+      44000 + Math.random() * 28000;
+
+    initiativeTimerRef.current =
+      window.setTimeout(async () => {
+        await triggerZeroInitiative();
+        schedule();
+      }, delay);
+  };
+
+  schedule();
+
+  const activity = () => {
+    lastHumanActivityRef.current = Date.now();
+  };
+
+  window.addEventListener("pointerdown", activity, { passive: true });
+  window.addEventListener("keydown", activity, { passive: true });
+
+  return () => {
+    if (initiativeTimerRef.current) {
+      clearTimeout(initiativeTimerRef.current);
+    }
+
+    window.removeEventListener("pointerdown", activity);
+    window.removeEventListener("keydown", activity);
+  };
+}, [
+  loading,
+  input,
+  language,
+  conversationHistory,
+  relationship,
+  zeroState,
+  arcadeOpen,
+  coreOpen,
+  shopOpen,
+  walletOpen,
+  settingsOpen,
+  paywallOpen,
+  premiumOpen,
+]);
+
 const handleGameFinish = (gameEvent) => {
   setRelationship((previous) =>
     evolveRelationshipFromGame(previous, {
@@ -1412,7 +1599,7 @@ const handleRewardedCoins = async () => {
   try {
     let rewarded = false;
 
-    if (import.meta.env.DEV) {
+    if (TEST_MODE) {
       await new Promise((resolve) =>
         window.setTimeout(resolve, 650)
       );
@@ -1457,7 +1644,7 @@ const handleBuyCoinPack = async (pack) => {
 
   try {
     // DEV = achat simulé
-    if (import.meta.env.DEV) {
+    if (TEST_MODE) {
       await new Promise((resolve) =>
         window.setTimeout(resolve, 550)
       );
@@ -1519,41 +1706,98 @@ const handleBuyCoinPack = async (pack) => {
 };
 
 const handleRestorePurchases = async () => {
+  gameSfx.tap();
+
+  if (TEST_MODE) {
+    await new Promise((resolve) =>
+      window.setTimeout(resolve, 350)
+    );
+
+    setIsPremium(true);
+    setPremiumOpen(false);
+    setPaywallOpen(false);
+
+    setRewardToast(
+      language === "id"
+        ? "Premium dipulihkan · TEST"
+        : language === "en"
+          ? "Premium restored · TEST"
+          : "Premium restauré · TEST"
+    );
+
+    window.setTimeout(() => {
+      setRewardToast("");
+    }, 1800);
+
+    return;
+  }
+
   try {
     const customerInfo = await Purchases.restorePurchases();
 
     if (customerInfo.entitlements.active["premium"]) {
       setIsPremium(true);
-      alert("Abonnement restauré");
+      setPremiumOpen(false);
+      setPaywallOpen(false);
     }
   } catch (e) {
-    alert("Impossible de restaurer");
+    setRewardToast(copy.wallet.purchaseUnavailable);
+
+    window.setTimeout(() => {
+      setRewardToast("");
+    }, 1800);
   }
 };
 
 const handlePurchasePremium = async () => {
   sfx.button();
   setPremiumLoading(true);
+
   try {
-    const purchaseResult = await Purchases.purchaseProduct({
-      productIdentifier: 'zero_premium_monthly'
+    if (TEST_MODE) {
+      await new Promise((resolve) =>
+        window.setTimeout(resolve, 500)
+      );
+
+      setIsPremium(true);
+      setPremiumOpen(false);
+      setPaywallOpen(false);
+
+      setRewardToast(
+        language === "id"
+          ? "Premium aktif · TEST"
+          : language === "en"
+            ? "Premium active · TEST"
+            : "Premium actif · TEST"
+      );
+
+      window.setTimeout(() => {
+        setRewardToast("");
+      }, 1900);
+
+      return;
+    }
+
+    await Purchases.purchaseProduct({
+      productIdentifier: "zero_premium_monthly"
     });
-    
-    // Si l'achat fonctionne :
-setIsPremium(true);
+
+    setIsPremium(true);
     setPremiumOpen(false);
     setPaywallOpen(false);
-    alert("Achat réussi ! 🎉");
   } catch (err) {
-    if (!err.userCancelled) {
-      alert("Erreur lors de l'achat : " + err.message);
+    if (!err?.userCancelled) {
+      setRewardToast(copy.wallet.purchaseUnavailable);
+
+      window.setTimeout(() => {
+        setRewardToast("");
+      }, 1800);
     }
   } finally {
     setPremiumLoading(false);
   }
 };
 
- 
 if (!appReady) {
   return (
     <div className="app app-loader-screen">
@@ -1677,6 +1921,57 @@ if (!appReady) {
 
       <main className="main-area">
   <InteractiveBackground />
+
+  <motion.button
+    type="button"
+    className="zero64-play-orb"
+    aria-label={
+      language === "id"
+        ? "Main sama Zero"
+        : language === "en"
+          ? "Play with Zero"
+          : "Jouer avec Zero"
+    }
+    onClick={() => {
+      gameSfx.arrive();
+      setArcadeOpen(true);
+      markHumanActivity();
+    }}
+    whileTap={{ scale: 0.91 }}
+    whileHover={{ scale: 1.04 }}
+  >
+    <span className="zero64-play-icon" aria-hidden="true">
+      <i />
+      <i />
+      <b />
+      <b />
+    </span>
+    <strong>
+      {language === "id"
+        ? "MAIN"
+        : language === "en"
+          ? "PLAY"
+          : "JOUER"}
+    </strong>
+    <small>
+      {language === "id"
+        ? "lawan Zero"
+        : language === "en"
+          ? "vs Zero"
+          : "avec Zero"}
+    </small>
+  </motion.button>
+
+  <div className="zero64-purpose">
+    <span className="zero64-purpose-heart">♥</span>
+    <span>
+      {language === "id"
+        ? "ngobrol · main · bentuk Zero kamu"
+        : language === "en"
+          ? "talk · play · shape your Zero"
+          : "parle · joue · façonne ton Zero"}
+    </span>
+  </div>
  
 <ZeroEntity
   mood={mood}
@@ -1692,6 +1987,7 @@ if (!appReady) {
 
 
   <FlyingMessage text={flyingMessage} id={flyingId} />
+  <div className={zeroInitiative ? "zero64-initiative-reply" : ""}>
   <CenterReply
     loading={loading}
     reply={error || reply}
@@ -1700,6 +1996,7 @@ if (!appReady) {
     emotion={emotion}
     language={language}
   />
+  </div>
 </main>
 
       <Composer
@@ -1718,10 +2015,9 @@ if (!appReady) {
         loading={paywallLoading}
         line={paywallLine}
         onClose={() => {
-  if (messagesLeft > 0) {
-    setPaywallOpen(false);
-  }
-}}
+          setPaywallOpen(false);
+          setPaywallLoading(false);
+        }}
         onWatchAd={handleRewardedAd}
         onOpenPremium={openPremium}
         rewardedAvailable={rewardedAvailable}

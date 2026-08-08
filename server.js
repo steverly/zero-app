@@ -107,7 +107,7 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({
     ok: true,
     model: MODEL,
-    version: "zero-v6.3.1-json-budget-fix",
+    version: "zero-v6.4-zero-is-the-game",
   });
 });
 
@@ -331,6 +331,6 @@ app.post("/api/reply", rateLimit, async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(
-    `Zero V6.3.1 lancé sur http://localhost:${PORT}`
+    `Zero V6.4 lancé sur http://localhost:${PORT}`
   );
 });

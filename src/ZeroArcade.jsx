@@ -40,8 +40,8 @@ function localComment(kind, relationship, language = "fr") {
       start: familiar > 0.35
         ? ["viens", "vas-y", "à toi", "..."]
         : ["ok", "vas-y", "..."],
-      zeroWin: ["oe", "je l'avais", "ça c'est pour moi", "..."],
-      userWin: ["bien vu", "ok celle-là est à toi", "propre", "ah."],
+      zeroWin: ["oe.", "celle-là je la garde", "trop tard 😭", "nan ça c'est pour moi", "... j'avais vu"],
+      userWin: ["ok là t'as cuisiné", "j'ai rien dit.", "propre j'avoue", "ah ouais.", "bon. revanche mentale."],
       draw: ["égalité", "bon.", "on bouge pas"],
       fast: ["ah ouais", "propre", "rapide"],
       slow: ["j'ai eu le temps", "...", "tranquille"],
@@ -53,8 +53,8 @@ function localComment(kind, relationship, language = "fr") {
       start: familiar > 0.35
         ? ["come on", "your turn", "go", "..."]
         : ["okay", "go", "..."],
-      zeroWin: ["yeah", "got it", "mine", "..."],
-      userWin: ["nice", "okay that one's yours", "clean", "huh."],
+      zeroWin: ["yeah.", "keeping that one", "too late 😭", "nah that's mine", "... saw it"],
+      userWin: ["okay you cooked", "I said nothing.", "clean, fair", "oh damn.", "fine. mental rematch."],
       draw: ["draw", "well.", "still tied"],
       fast: ["okay damn", "clean", "fast"],
       slow: ["had time", "...", "taking it easy"],
@@ -66,8 +66,8 @@ function localComment(kind, relationship, language = "fr") {
       start: familiar > 0.35
         ? ["ayo", "giliran kamu", "gas", "..."]
         : ["oke", "ayo", "..."],
-      zeroWin: ["iya", "dapet", "punyaku", "..."],
-      userWin: ["nah bagus", "oke itu punya kamu", "rapi", "oh."],
+      zeroWin: ["iya.", "yang ini punyaku", "telat 😭", "nah ini gue ambil", "... udah keliatan"],
+      userWin: ["oke jago juga", "gue diem.", "rapi sih", "buset.", "oke. rematch di kepala."],
       draw: ["seri", "hmm.", "masih sama"],
       fast: ["buset", "cepet juga", "rapi"],
       slow: ["sempet nunggu", "...", "santai banget"],

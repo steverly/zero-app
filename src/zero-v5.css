@@ -8365,3 +8365,301 @@ small {
     animation: none !important;
   }
 }
+
+
+/* =========================================================
+   ZERO V6.4 — ZERO IS THE GAME
+   ========================================================= */
+
+.zero64-play-orb {
+  position: absolute;
+  left: clamp(14px, 3vw, 34px);
+  top: 50%;
+  z-index: 24;
+
+  width: 92px;
+  min-height: 108px;
+  padding: 12px 8px 10px;
+
+  transform: translateY(-50%);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid rgba(238, 201, 166, 0.16);
+  border-radius: 27px;
+
+  background:
+    radial-gradient(circle at 50% 18%, rgba(240, 192, 148, 0.15), transparent 42%),
+    linear-gradient(155deg, rgba(255,255,255,0.065), rgba(255,255,255,0.018));
+
+  color: rgba(249, 234, 218, 0.88);
+  box-shadow:
+    0 18px 42px rgba(0,0,0,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.055);
+
+  backdrop-filter: blur(15px);
+  cursor: pointer;
+
+  animation: zero64-play-float 3.6s ease-in-out infinite;
+}
+
+.zero64-play-orb::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  box-shadow: 0 0 28px rgba(233,185,142,0.045);
+  animation: zero64-play-pulse 2.8s ease-in-out infinite;
+}
+
+.zero64-play-orb strong {
+  margin-top: 8px;
+  font-size: 10px;
+  letter-spacing: 0.11em;
+}
+
+.zero64-play-orb small {
+  margin-top: 3px;
+  color: rgba(255,244,229,0.29);
+  font-size: 7px;
+}
+
+.zero64-play-icon {
+  position: relative;
+  width: 46px;
+  height: 31px;
+  border: 2px solid rgba(239, 205, 170, 0.67);
+  border-radius: 14px 14px 18px 18px;
+  transform: rotate(-2deg);
+}
+
+.zero64-play-icon::before,
+.zero64-play-icon::after {
+  content: "";
+  position: absolute;
+  bottom: -8px;
+  width: 13px;
+  height: 15px;
+  border: 2px solid rgba(239, 205, 170, 0.55);
+  border-top: 0;
+}
+
+.zero64-play-icon::before {
+  left: 2px;
+  border-radius: 0 0 0 12px;
+  transform: rotate(13deg);
+}
+
+.zero64-play-icon::after {
+  right: 2px;
+  border-radius: 0 0 12px 0;
+  transform: rotate(-13deg);
+}
+
+.zero64-play-icon i:first-of-type,
+.zero64-play-icon i:last-of-type {
+  position: absolute;
+  background: rgba(245,232,216,0.68);
+  border-radius: 999px;
+}
+
+.zero64-play-icon i:first-of-type {
+  width: 13px;
+  height: 3px;
+  left: 7px;
+  top: 13px;
+}
+
+.zero64-play-icon i:last-of-type {
+  width: 3px;
+  height: 13px;
+  left: 12px;
+  top: 8px;
+}
+
+.zero64-play-icon b {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: rgba(185,172,232,0.72);
+}
+
+.zero64-play-icon b:first-of-type {
+  right: 9px;
+  top: 9px;
+}
+
+.zero64-play-icon b:last-of-type {
+  right: 16px;
+  top: 16px;
+  background: rgba(159,217,211,0.72);
+}
+
+@keyframes zero64-play-float {
+  0%, 100% { transform: translateY(-50%) translateY(0); }
+  50% { transform: translateY(-50%) translateY(-5px); }
+}
+
+@keyframes zero64-play-pulse {
+  0%, 100% { opacity: 0.35; transform: scale(0.98); }
+  50% { opacity: 0.9; transform: scale(1.035); }
+}
+
+.zero64-purpose {
+  position: absolute;
+  left: 50%;
+  bottom: clamp(14px, 3.2vh, 34px);
+  z-index: 18;
+
+  transform: translateX(-50%);
+
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  padding: 7px 11px;
+  border: 1px solid rgba(255,244,229,0.055);
+  border-radius: 999px;
+  background: rgba(19,16,14,0.34);
+
+  color: rgba(255,244,229,0.26);
+  font-size: 7.5px;
+  letter-spacing: 0.015em;
+
+  backdrop-filter: blur(10px);
+  pointer-events: none;
+}
+
+.zero64-purpose-heart {
+  color: rgba(233,185,142,0.58);
+  animation: zero64-purpose-heart 2.3s ease-in-out infinite;
+}
+
+@keyframes zero64-purpose-heart {
+  0%, 100% { transform: scale(0.88); opacity: 0.55; }
+  50% { transform: scale(1.12); opacity: 0.95; }
+}
+
+/* A spontaneous AI line should visibly feel like ZERO spoke first. */
+.zero64-initiative-reply .reply-shell {
+  position: relative;
+}
+
+.zero64-initiative-reply .reply-shell::before {
+  content: "ZERO";
+  position: absolute;
+  left: 50%;
+  top: -22px;
+  transform: translateX(-50%);
+
+  color: rgba(233,185,142,0.38);
+  font-size: 7px;
+  font-weight: 800;
+  letter-spacing: 0.2em;
+
+  animation: zero64-initiative-label 1.2s ease both;
+}
+
+.zero64-initiative-reply .reply-text {
+  text-shadow: 0 0 24px rgba(233,185,142,0.08);
+}
+
+@keyframes zero64-initiative-label {
+  from { opacity: 0; transform: translateX(-50%) translateY(5px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+/* Give expressive replies more game-like impact without turning into a circus. */
+.zero-reply-hype .reply-text {
+  animation: zero64-text-hype 520ms cubic-bezier(.16,1,.3,1) both;
+}
+
+.zero-reply-funny .reply-text,
+.zero-reply-laugh .reply-text {
+  animation: zero64-text-funny 620ms cubic-bezier(.16,1,.3,1) both;
+}
+
+.zero-reply-sharp .reply-text {
+  animation: zero64-text-sharp 280ms ease-out both;
+}
+
+.zero-reply-warm .reply-text {
+  text-shadow: 0 0 28px rgba(233,185,142,0.12);
+}
+
+@keyframes zero64-text-hype {
+  0% { transform: scale(.88); letter-spacing: -.02em; }
+  55% { transform: scale(1.045); }
+  100% { transform: scale(1); }
+}
+
+@keyframes zero64-text-funny {
+  0% { transform: rotate(-1deg) translateY(5px); }
+  45% { transform: rotate(.7deg) translateY(-2px); }
+  100% { transform: rotate(0) translateY(0); }
+}
+
+@keyframes zero64-text-sharp {
+  0% { transform: translateX(-7px); opacity: .35; }
+  55% { transform: translateX(2px); opacity: 1; }
+  100% { transform: translateX(0); }
+}
+
+@media (max-width: 680px) {
+  .zero64-play-orb {
+    left: 8px;
+    top: 47%;
+    width: 70px;
+    min-height: 88px;
+    padding: 9px 5px 8px;
+    border-radius: 22px;
+  }
+
+  .zero64-play-icon {
+    width: 36px;
+    height: 25px;
+    transform: scale(.88);
+  }
+
+  .zero64-play-orb strong {
+    margin-top: 5px;
+    font-size: 8px;
+  }
+
+  .zero64-play-orb small {
+    font-size: 6.5px;
+  }
+
+  .zero64-purpose {
+    bottom: 7px;
+    max-width: 72vw;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .zero64-initiative-reply .reply-shell::before {
+    top: -18px;
+  }
+}
+
+@media (max-width: 390px) {
+  .zero64-play-orb {
+    width: 62px;
+    min-height: 78px;
+    left: 5px;
+  }
+
+  .zero64-play-orb small {
+    display: none;
+  }
+
+  .zero64-purpose {
+    font-size: 6.7px;
+  }
+}
