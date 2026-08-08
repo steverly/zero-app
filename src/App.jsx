@@ -55,7 +55,7 @@ import {
 import { gameSfx } from "./zero-game-sfx";
 import { zeroAudio } from "./zero-audio";
 import { getZeroCopy } from "./zero-i18n";
-import { loadLivingCore, saveLivingCore, recordLivingChat, recordLivingGame, chooseZeroImpulse, markImpulseShown, livingCoreLabel } from "./zero-care";
+import { loadLivingCore, saveLivingCore, recordLivingChat, recordLivingGame, chooseZeroImpulse, markImpulseShown, livingCoreLabel, getCareProgress, addCareXP, claimCareReward, getZeroWants } from "./zero-care";
 import "./zero-v5.css";
 
 const MAX_CHARS = ZERO_CONFIG.chat.maxUserChars;
@@ -952,10 +952,38 @@ const followUpTimeoutRef = useRef(null);
     getWalletCoreMultiplier(wallet) > 1;
 
   const livingStatus = livingCoreLabel(livingCore, language);
+  const careProgress = getCareProgress(livingCore);
+  const zeroWants = getZeroWants(livingCore, language);
 
 
   
 
+
+  useEffect(() => {
+    const handleGlobalUiSound = (event) => {
+      const button = event.target.closest?.(
+        "button, [role='button'], label"
+      );
+
+      if (!button || button.disabled) return;
+      if (button.dataset?.zeroSilent === "true") return;
+
+      gameSfx.tap();
+    };
+
+    document.addEventListener(
+      "pointerdown",
+      handleGlobalUiSound,
+      true
+    );
+
+    return () =>
+      document.removeEventListener(
+        "pointerdown",
+        handleGlobalUiSound,
+        true
+      );
+  }, []);
 
   useEffect(() => {
     saveRelationship(relationship);
@@ -1425,7 +1453,10 @@ setRelationship((previous) =>
 setFeedPulse((value) => value + 1);
 
 setLivingCore((previous) =>
-  recordLivingChat(previous, data.signals || {})
+  addCareXP(
+    recordLivingChat(previous, data.signals || {}),
+    8
+  )
 );
 
 if (
@@ -1721,7 +1752,10 @@ useEffect(() => {
 
 const handleGameFinish = (gameEvent) => {
   setLivingCore((previous) =>
-    recordLivingGame(previous, gameEvent.result)
+    addCareXP(
+      recordLivingGame(previous, gameEvent.result),
+      gameEvent.result === "win" ? 14 : 10
+    )
   );
 
   setRelationship((previous) =>
@@ -2245,10 +2279,59 @@ if (!appReady) {
         ) : null}
       </AnimatePresence>
 
-      <div className="zero66-living-whisper">
-        <span><i style={{ width: `${livingStatus.progress}%` }} /></span>
-        <small>{livingStatus.label}</small>
-      </div>
+      <motion.button
+        type="button"
+        className={[
+          "zero67-care",
+          careProgress.claimable > 0 ? "has-reward" : "",
+        ].filter(Boolean).join(" ")}
+        whileTap={{ scale: 0.96 }}
+        onClick={() => {
+          if (careProgress.claimable > 0) {
+            const result = claimCareReward(livingCore);
+            setLivingCore(result.state);
+
+            if (result.coins > 0) {
+              setWallet((previous) => ({
+                ...previous,
+                coins: Number(previous.coins || 0) + result.coins,
+              }));
+              gameSfx.coin();
+              setRewardToast(`+${result.coins} coins`);
+              window.setTimeout(() => setRewardToast(""), 1800);
+            }
+            return;
+          }
+
+          if (zeroWants.type === "play") {
+            openArcadeFromHome();
+          } else if (zeroWants.type === "talk") {
+            lastHumanActivityRef.current = Date.now() - 60000;
+            lastInitiativeRef.current = 0;
+            triggerZeroInitiative();
+          } else {
+            setCoreOpen(true);
+          }
+        }}
+      >
+        <span className="zero67-care-orb">
+          <span className="zero67-care-eyes"><i /><i /></span>
+        </span>
+
+        <span className="zero67-care-copy">
+          <strong>
+            CORE {careProgress.level}
+          </strong>
+          <small>{zeroWants.text}</small>
+          <span className="zero67-care-track">
+            <i style={{ width: `${careProgress.percent}%` }} />
+          </span>
+        </span>
+
+        <span className="zero67-care-plus">
+          {careProgress.claimable > 0 ? "!" : "›"}
+        </span>
+      </motion.button>
 
       <Composer
         value={input}

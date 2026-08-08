@@ -3,7 +3,7 @@ const clamp=(n)=>Math.max(0,Math.min(100,Number(n)||0));
 const day=()=>new Date().toISOString().slice(0,10);
 
 export function loadLivingCore(){
-  const base={bond:4,curiosity:20,playUrge:24,sharedMoments:0,lastImpulseAt:0,lastInteractionAt:Date.now(),today:day(),recent:[]};
+  const base={bond:4,curiosity:20,playUrge:24,sharedMoments:0,lastImpulseAt:0,lastInteractionAt:Date.now(),today:day(),recent:[],careXP:0,careLevel:1,careCoinsClaimed:0};
   try{
     const saved=JSON.parse(localStorage.getItem(KEY)||"null");
     if(!saved)return base;
@@ -40,4 +40,33 @@ export function livingCoreLabel(v,language="fr"){
  const n=Number(v.bond||0),i=n>=78?4:n>=48?3:n>=24?2:n>=10?1:0;
  const x={fr:["il t'observe","il te capte","il prend ses habitudes","vous avez vos délires","c'est vraiment ton Zero"],en:["he's observing you","he's getting you","he's building habits","you've got your own thing","this is really your Zero"],id:["dia lagi merhatiin kamu","dia mulai ngerti kamu","dia mulai punya kebiasaan","kalian udah punya vibe sendiri","ini beneran Zero kamu"]};
  return {label:(x[language]||x.fr)[i],progress:clamp(n)};
+}
+export function getCareProgress(v){
+ const xp=Number(v.careXP||0);
+ const level=Math.max(1,Math.floor(xp/80)+1);
+ const inside=xp%80;
+ return {level,xp,inside,needed:80,percent:(inside/80)*100,claimable:Math.max(0,(level-1)-Number(v.careCoinsClaimed||0))};
+}
+export function addCareXP(v,amount){
+ const next={...v,careXP:Number(v.careXP||0)+Math.max(0,Number(amount)||0)};
+ next.careLevel=getCareProgress(next).level;
+ return next;
+}
+export function claimCareReward(v){
+ const p=getCareProgress(v);
+ if(p.claimable<=0)return {state:v,coins:0};
+ const count=p.claimable;
+ return {state:{...v,careCoinsClaimed:Number(v.careCoinsClaimed||0)+count},coins:count*35};
+}
+export function getZeroWants(v,language="fr"){
+ const t={
+ fr:{play:"il a envie de jouer",talk:"il veut te parler",chill:"il est posé",reward:"récompense prête"},
+ en:{play:"he wants to play",talk:"he wants to talk",chill:"he's chilling",reward:"reward ready"},
+ id:{play:"dia pengen main",talk:"dia mau ngobrol",chill:"dia lagi santai",reward:"hadiah siap"}
+ };
+ const c=t[language]||t.fr,p=getCareProgress(v);
+ if(p.claimable>0)return {type:"reward",text:c.reward};
+ if(Number(v.playUrge||0)>48)return {type:"play",text:c.play};
+ if(Number(v.curiosity||0)>45)return {type:"talk",text:c.talk};
+ return {type:"chill",text:c.chill};
 }

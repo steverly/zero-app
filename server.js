@@ -107,7 +107,7 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({
     ok: true,
     model: MODEL,
-    version: "zero-v6.6-living-core",
+    version: "zero-v6.7-care-loop",
   });
 });
 
@@ -331,6 +331,6 @@ app.post("/api/reply", rateLimit, async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(
-    `Zero V6.6 lancé sur http://localhost:${PORT}`
+    `Zero V6.7 lancé sur http://localhost:${PORT}`
   );
 });
