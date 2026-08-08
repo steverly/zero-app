@@ -369,6 +369,13 @@ function CenterReply({
   mood = "idle",
   emotion,
   language = "fr",
+  spontaneous = false,
+  promptType = "",
+  onPromptYes,
+  onPromptNo,
+  away = false,
+  awaySeconds = 0,
+  awayCopy = null,
 }) {
   useEffect(() => {
     if (reply && !loading) {
@@ -409,7 +416,13 @@ function CenterReply({
 
   return (
     <div
-      className={`center-stage zero-reply-expression zero-reply-${expression}`}
+      className={[
+        "center-stage",
+        "zero-reply-expression",
+        `zero-reply-${expression}`,
+        spontaneous ? "zero72-spontaneous" : "",
+        away ? "zero72-away-reply" : "",
+      ].filter(Boolean).join(" ")}
       data-reply-mood={mood}
     >
       <AnimatePresence mode="wait">
@@ -499,6 +512,46 @@ function CenterReply({
                 </span>
               )}
             </div>
+            {spontaneous && promptType ? (
+              <motion.div
+                className="zero72-choice-row"
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.32 }}
+              >
+                <button
+                  type="button"
+                  className="is-yes"
+                  onClick={onPromptYes}
+                >
+                  {promptType === "play"
+                    ? awayCopy?.yes
+                    : awayCopy?.talkYes}
+                </button>
+
+                <button
+                  type="button"
+                  className="is-no"
+                  onClick={onPromptNo}
+                >
+                  {promptType === "play"
+                    ? awayCopy?.no
+                    : awayCopy?.talkNo}
+                </button>
+              </motion.div>
+            ) : null}
+
+            {away ? (
+              <div className="zero72-away-status">
+                <strong>{awayCopy?.title}</strong>
+                <span>
+                  {awaySeconds > 0
+                    ? `${awayCopy?.wait} · ${awaySeconds}s`
+                    : awayCopy?.apology}
+                </span>
+                <small>{awayCopy?.apology}</small>
+              </div>
+            ) : null}
           </motion.div>
         )}
       </AnimatePresence>
@@ -853,6 +906,8 @@ export default function App() {
   const [relationship, setRelationship] = useState(() => loadRelationship());
   const [livingCore, setLivingCore] = useState(() => loadLivingCore());
   const [zeroImpulse, setZeroImpulse] = useState(null);
+  const [spontaneousPrompt, setSpontaneousPrompt] = useState(null);
+  const [boundaryTick, setBoundaryTick] = useState(Date.now());
   const [boundaryState, setBoundaryState] = useState(() => loadBoundaryState());
   const [economy, setEconomy] = useState(() => loadEconomy());
   const [wallet, setWallet] = useState(() => loadWallet());
@@ -964,6 +1019,49 @@ const followUpTimeoutRef = useRef(null);
     getWalletCoreMultiplier(wallet) > 1;
 
   const livingStatus = livingCoreLabel(livingCore, language);
+  const boundaryRemainingMs =
+    boundaryState.mode === "away"
+      ? Math.max(
+          0,
+          Number(boundaryState.awayUntil || 0) -
+            boundaryTick
+        )
+      : 0;
+
+  const boundaryRemainingSeconds =
+    Math.ceil(
+      boundaryRemainingMs / 1000
+    );
+
+  const awayCopy = {
+    fr: {
+      title: "Zero veut être tranquille",
+      wait: "laisse-lui un peu de temps",
+      apology: "si tu veux réparer, excuse-toi",
+      yes: "OUI",
+      no: "NON",
+      talkYes: "VAS-Y",
+      talkNo: "PLUS TARD",
+    },
+    en: {
+      title: "Zero wants some space",
+      wait: "give him a little time",
+      apology: "if you want to fix it, apologize",
+      yes: "YES",
+      no: "NO",
+      talkYes: "GO ON",
+      talkNo: "LATER",
+    },
+    id: {
+      title: "Zero lagi mau sendiri",
+      wait: "kasih dia waktu bentar",
+      apology: "kalau mau baikan, minta maaf",
+      yes: "IYA",
+      no: "NGGAK",
+      talkYes: "AYO",
+      talkNo: "NANTI",
+    },
+  }[language] || null;
   const cosmeticState = getCosmeticState(wallet);
 
 
@@ -1007,6 +1105,16 @@ const followUpTimeoutRef = useRef(null);
   useEffect(() => {
     saveBoundaryState(boundaryState);
   }, [boundaryState]);
+
+  useEffect(() => {
+    if (boundaryState.mode !== "away") return undefined;
+
+    const timer = window.setInterval(() => {
+      setBoundaryTick(Date.now());
+    }, 500);
+
+    return () => window.clearInterval(timer);
+  }, [boundaryState.mode]);
 
   useEffect(() => {
     saveEconomy(economy);
@@ -1423,6 +1531,7 @@ const handleRewardedAd = async () => {
 
   markHumanActivity();
   setZeroImpulse(null);
+  setSpontaneousPrompt(null);
 
   if (boundaryState.mode === "away") {
     const result =
@@ -1433,6 +1542,7 @@ const handleRewardedAd = async () => {
       );
 
     setBoundaryState(result.state);
+    setBoundaryTick(Date.now());
     setInput("");
 
     if (result.line) {
@@ -1665,12 +1775,25 @@ useEffect(() => {
 
         if (impulse) {
           setZeroImpulse(impulse);
+          setSpontaneousPrompt(impulse);
+          setReply(impulse.text);
+          setError("");
+
           setLivingCore((previous) =>
             markImpulseShown(previous, impulse)
           );
-          setMood(impulse.type === "play" ? "hyped" : "curious");
+
+          setMood(
+            impulse.type === "play"
+              ? "hyped"
+              : "curious"
+          );
+
           gameSfx.soft();
-          window.setTimeout(() => setMood("idle"), 1800);
+
+          window.setTimeout(() => {
+            setMood("idle");
+          }, 1800);
         }
       }
 
@@ -2342,54 +2465,46 @@ if (!appReady) {
     mood={mood}
     emotion={emotion}
     language={language}
+    spontaneous={Boolean(spontaneousPrompt)}
+    promptType={spontaneousPrompt?.type || ""}
+    onPromptYes={() => {
+      const prompt = spontaneousPrompt;
+      setSpontaneousPrompt(null);
+      setZeroImpulse(null);
+      markHumanActivity();
+
+      if (prompt?.type === "play") {
+        openArcadeFromHome(
+          prompt.gameId || ""
+        );
+        return;
+      }
+
+      if (prompt?.type === "talk") {
+        lastHumanActivityRef.current =
+          Date.now() - 60000;
+        lastInitiativeRef.current = 0;
+
+        window.setTimeout(() => {
+          triggerZeroInitiative();
+        }, 100);
+      }
+    }}
+    onPromptNo={() => {
+      setSpontaneousPrompt(null);
+      setZeroImpulse(null);
+      setReply("");
+      setMood("idle");
+      gameSfx.soft();
+    }}
+    away={boundaryState.mode === "away"}
+    awaySeconds={boundaryRemainingSeconds}
+    awayCopy={awayCopy}
   />
   </div>
 </main>
 
-      <AnimatePresence>
-        {zeroImpulse ? (
-          <motion.div
-            className={`zero66-impulse is-${zeroImpulse.type}`}
-            initial={{ opacity: 0, y: 12, scale: 0.92 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 7, scale: 0.96 }}
-          >
-            <button
-              type="button"
-              className="zero66-impulse-main"
-              onClick={() => {
-                const impulse = zeroImpulse;
-                setZeroImpulse(null);
-                markHumanActivity();
 
-                if (impulse.type === "play") {
-                  openArcadeFromHome(
-                    impulse.gameId || ""
-                  );
-                  return;
-                }
-
-                lastHumanActivityRef.current = Date.now() - 60000;
-                lastInitiativeRef.current = 0;
-                window.setTimeout(() => triggerZeroInitiative(), 120);
-              }}
-            >
-              <span className="zero66-mini-eyes"><i /><i /></span>
-              <strong>{zeroImpulse.text}</strong>
-              <span>›</span>
-            </button>
-
-            <button
-              type="button"
-              className="zero66-dismiss"
-              onClick={() => setZeroImpulse(null)}
-              aria-label="Fermer"
-            >
-              ×
-            </button>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
 
 
 

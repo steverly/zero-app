@@ -10291,3 +10291,226 @@ small {
     top: 58%;
   }
 }
+
+
+/* =========================================================
+   ZERO V7.2 — NATIVE INITIATIVE + CLEAR BOUNDARIES
+   ========================================================= */
+
+/* Zero speaking first uses the SAME reply area, only the energy changes. */
+.zero72-spontaneous .reply-shell {
+  position: relative;
+}
+
+.zero72-spontaneous .reply-shell::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -15px;
+  width: 44px;
+  height: 3px;
+  transform: translateX(-50%);
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      rgba(245, 200, 157, 0.72),
+      transparent
+    );
+  box-shadow:
+    0 0 16px rgba(239, 176, 123, 0.18);
+  animation:
+    zero72-self-start
+    1.1s
+    ease-out
+    both;
+}
+
+.zero72-spontaneous .reply-text {
+  text-shadow:
+    0 0 24px rgba(242, 190, 144, 0.10);
+  animation:
+    zero72-spontaneous-text
+    520ms
+    cubic-bezier(.16,1,.3,1)
+    both;
+}
+
+@keyframes zero72-self-start {
+  from {
+    opacity: 0;
+    width: 8px;
+  }
+  to {
+    opacity: 1;
+    width: 44px;
+  }
+}
+
+@keyframes zero72-spontaneous-text {
+  0% {
+    opacity: 0;
+    transform:
+      translateY(10px)
+      scale(.96);
+  }
+  55% {
+    opacity: 1;
+    transform:
+      translateY(-2px)
+      scale(1.018);
+  }
+  100% {
+    transform:
+      translateY(0)
+      scale(1);
+  }
+}
+
+.zero72-choice-row {
+  margin-top: 18px;
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+}
+
+.zero72-choice-row button {
+  min-width: 72px;
+  min-height: 34px;
+  padding: 0 15px;
+
+  border-radius: 999px;
+  border:
+    1px solid rgba(255,244,229,.12);
+
+  background:
+    rgba(255,255,255,.055);
+
+  color:
+    rgba(255,246,234,.66);
+
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .08em;
+
+  cursor: pointer;
+  transition:
+    transform 120ms ease,
+    background 160ms ease,
+    border-color 160ms ease;
+}
+
+.zero72-choice-row button:active {
+  transform: scale(.94);
+}
+
+.zero72-choice-row .is-yes {
+  border-color:
+    rgba(239,190,143,.28);
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(213,145,112,.32),
+      rgba(147,111,151,.25)
+    );
+
+  color:
+    rgba(255,244,229,.92);
+}
+
+.zero72-choice-row .is-no {
+  opacity: .66;
+}
+
+/* While away, the same reply area explains the state clearly. */
+.zero72-away-reply .reply-text {
+  opacity: .68;
+}
+
+.zero72-away-status {
+  width: min(390px, 82vw);
+  margin: 18px auto 0;
+  padding: 11px 13px;
+
+  border:
+    1px solid rgba(255,216,184,.10);
+
+  border-radius: 15px;
+
+  background:
+    rgba(48,39,43,.32);
+
+  text-align: center;
+  backdrop-filter: blur(10px);
+}
+
+.zero72-away-status strong,
+.zero72-away-status span,
+.zero72-away-status small {
+  display: block;
+}
+
+.zero72-away-status strong {
+  color:
+    rgba(255,238,222,.65);
+
+  font-size: 9px;
+}
+
+.zero72-away-status span {
+  margin-top: 4px;
+
+  color:
+    rgba(255,224,197,.48);
+
+  font-size: 8px;
+}
+
+.zero72-away-status small {
+  margin-top: 5px;
+
+  color:
+    rgba(255,244,229,.27);
+
+  font-size: 7.5px;
+}
+
+/* Composer visually communicates that Zero is not in normal chat mode. */
+.app:has(.zero-entity.is-away)
+.composer-card {
+  border-color:
+    rgba(221,167,141,.12) !important;
+
+  background:
+    rgba(55,45,49,.38) !important;
+}
+
+.app:has(.zero-entity.is-away)
+.composer-input::placeholder {
+  color:
+    rgba(255,225,205,.32) !important;
+}
+
+@media (max-width: 680px) {
+  .zero72-choice-row {
+    margin-top: 13px;
+  }
+
+  .zero72-choice-row button {
+    min-width: 66px;
+    min-height: 32px;
+  }
+
+  .zero72-away-status {
+    width: min(330px, 80vw);
+    margin-top: 13px;
+    padding: 9px 10px;
+  }
+}
+
+/* Old floating impulse notification must never reappear from stale markup. */
+.zero66-impulse {
+  display: none !important;
+}

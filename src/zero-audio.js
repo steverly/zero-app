@@ -35,6 +35,10 @@ let state = {
 const listeners = new Set();
 let currentTrack = null;
 let previousByMode = { home: "", arcade: "" };
+let failedByMode = {
+  home: new Set(),
+  arcade: new Set(),
+};
 let transitionTimer = null;
 
 function playlistFor(mode = state.mode) {
@@ -43,14 +47,37 @@ function playlistFor(mode = state.mode) {
 
 function shuffledCandidate(mode = state.mode) {
   const playlist = playlistFor(mode);
-  const candidates = playlist.filter(
-    (track) => track.url !== currentTrack?.url && track.url !== previousByMode[mode]
+
+  const usable = playlist.filter(
+    (track) =>
+      !failedByMode[mode]?.has(track.url)
   );
-  const pool = candidates.length
-    ? candidates
-    : playlist.filter((track) => track.url !== currentTrack?.url);
-  const finalPool = pool.length ? pool : playlist;
-  return finalPool[Math.floor(Math.random() * finalPool.length)];
+
+  const base =
+    usable.length
+      ? usable
+      : playlist;
+
+  const candidates = base.filter(
+    (track) =>
+      track.url !== currentTrack?.url &&
+      track.url !== previousByMode[mode]
+  );
+
+  const pool =
+    candidates.length
+      ? candidates
+      : base.filter(
+          (track) =>
+            track.url !== currentTrack?.url
+        );
+
+  const finalPool =
+    pool.length ? pool : base;
+
+  return finalPool[
+    Math.floor(Math.random() * finalPool.length)
+  ];
 }
 
 function setTrack(track, { autoplay = true } = {}) {
@@ -144,16 +171,57 @@ function ensureGraph() {
   musicElement.addEventListener("ended", () => nextTrack());
 
   musicElement.addEventListener("error", () => {
-    const fallback = HOME_PLAYLIST[0];
-    if (currentTrack?.url !== fallback.url) {
+    const mode = state.mode;
+
+    if (currentTrack?.url) {
+      failedByMode[mode]?.add(
+        currentTrack.url
+      );
+    }
+
+    const playlist =
+      playlistFor(mode);
+
+    const remaining =
+      playlist.filter(
+        (track) =>
+          !failedByMode[mode]?.has(
+            track.url
+          )
+      );
+
+    if (remaining.length) {
+      setTrack(
+        shuffledCandidate(mode)
+      );
+      return;
+    }
+
+    // If every declared Arcade file is missing,
+    // only then return to the official Home theme.
+    const fallback =
+      HOME_PLAYLIST[0];
+
+    if (
+      currentTrack?.url !==
+      fallback.url
+    ) {
+      state.mode = "home";
       setTrack(fallback);
       return;
     }
+
     state.hasTrack = false;
     emit();
   });
 
   musicElement.addEventListener("canplay", () => {
+    if (currentTrack?.url) {
+      failedByMode[state.mode]?.delete(
+        currentTrack.url
+      );
+    }
+
     state.hasTrack = true;
     emit();
   });

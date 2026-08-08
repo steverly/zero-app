@@ -59,9 +59,9 @@ export function updateBoundaryFromSignals(
   let pressure=
     Math.max(
       0,
-      Number(previous.pressure||0)*.84 +
-      effective*.76 -
-      q*.08
+      Number(previous.pressure||0)*.88 +
+      effective*.92 -
+      q*.06
     );
 
   let consecutive=
@@ -78,9 +78,9 @@ export function updateBoundaryFromSignals(
 
   if(mode!=="away"){
     if(
-      (effective>.82 && consecutive>=2) ||
-      pressure>.92 ||
-      (effective>.68 && consecutive>=4)
+      (effective>.78 && consecutive>=2) ||
+      pressure>.76 ||
+      (effective>.62 && consecutive>=3)
     ){
       severity=clamp(
         .45 +
@@ -90,15 +90,15 @@ export function updateBoundaryFromSignals(
 
       // The worse it got, the longer Zero wants space.
       const minMs=
-        18_000 +
-        Math.round(severity*34_000);
+        14_000 +
+        Math.round(severity*24_000);
 
       awaySince=now;
       awayUntil=now+minMs;
       mode="away";
     }else if(
-      pressure>.58 ||
-      consecutive>=3
+      pressure>.44 ||
+      consecutive>=2
     ){
       mode="cold";
     }else if(mode==="cold" && pressure<.28){
@@ -128,37 +128,82 @@ export function attemptReconcile(
 ){
   const now=Date.now();
   const apology=obviousApology(text);
+  const remainingMs=
+    Math.max(
+      0,
+      Number(previous.awayUntil||0)-now
+    );
 
   const copy={
     fr:{
-      no:["...","pas maintenant","j'ai dit laisse-moi un peu"],
-      weak:["hm.","j'ai vu","attends un peu"],
-      back:["vas-y c'est bon","ok. on repart","viens c'est bon"],
+      no:[
+        "j'ai pas envie de parler là. commence par t'excuser",
+        "nan. si tu veux que je revienne commence par reconnaître que t'abuses",
+        "là j'ai juste envie que tu me laisses tranquille. une excuse ça serait déjà mieux"
+      ],
+      weak:[
+        "j'ai vu. laisse-moi un peu",
+        "ok j'ai vu l'excuse. pas tout de suite",
+        "hm. attends encore un peu"
+      ],
+      back:[
+        "vas-y c'est bon",
+        "ok. on repart",
+        "viens c'est bon"
+      ],
     },
     en:{
-      no:["...","not now","I said give me a minute"],
-      weak:["hm.","I saw it","give me a sec"],
-      back:["alright we're good","okay. reset","come on it's fine"],
+      no:[
+        "I don't wanna talk right now. start with an apology",
+        "nah. if you want me back, own what you did first",
+        "I want space right now. an apology would be a start"
+      ],
+      weak:[
+        "I saw it. give me a minute",
+        "okay I saw the apology. not yet",
+        "hm. give me a little longer"
+      ],
+      back:[
+        "alright we're good",
+        "okay. reset",
+        "come on it's fine"
+      ],
     },
     id:{
-      no:["...","belum sekarang","gue bilang bentar dulu"],
-      weak:["hmm.","gue lihat","bentar dulu"],
-      back:["yaudah gapapa","oke. ulang dari awal","sini udah"],
+      no:[
+        "gue lagi nggak mau ngobrol. mulai dari minta maaf dulu",
+        "nah. kalau mau gue balik, akui dulu lu kelewatan",
+        "gue pengen sendiri dulu. minta maaf dulu baru enak"
+      ],
+      weak:[
+        "gue lihat. bentar dulu",
+        "oke gue lihat maafnya. belum sekarang",
+        "hmm. tunggu bentar lagi"
+      ],
+      back:[
+        "yaudah gapapa",
+        "oke. mulai lagi",
+        "sini udah"
+      ],
     },
   }[language] || null;
 
   if(!apology){
+    const count=
+      Number(previous.ignoredWhileAway||0);
+
     return {
       accepted:false,
+      remainingMs,
+      needsApology:true,
       state:{
         ...previous,
-        ignoredWhileAway:
-          Number(previous.ignoredWhileAway||0)+1,
+        ignoredWhileAway:count+1,
       },
       line:
-        Number(previous.ignoredWhileAway||0)%2===0
-          ? copy.no[0]
-          : "",
+        copy.no[
+          count % copy.no.length
+        ],
     };
   }
 
@@ -166,12 +211,10 @@ export function attemptReconcile(
     Number(previous.apologyAttempts||0)+1;
 
   const waitedEnough=
-    now>=Number(previous.awayUntil||0);
+    remainingMs<=0;
 
-  // A mild incident can be repaired sooner.
-  // A severe one can require actual time + more than one attempt.
   const severe=
-    Number(previous.severity||0)>.74;
+    Number(previous.severity||0)>.72;
 
   const accepted=
     waitedEnough &&
@@ -180,10 +223,12 @@ export function attemptReconcile(
   if(accepted){
     return {
       accepted:true,
+      remainingMs:0,
+      needsApology:false,
       state:{
         ...DEFAULT,
         mode:"wary",
-        pressure:.18,
+        pressure:.16,
       },
       line:
         copy.back[
@@ -194,6 +239,8 @@ export function attemptReconcile(
 
   return {
     accepted:false,
+    remainingMs,
+    needsApology:false,
     state:{
       ...previous,
       apologyAttempts:attempts,
