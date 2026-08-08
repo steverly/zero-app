@@ -6,6 +6,7 @@ const state = {
   supported:
     typeof window !== "undefined" &&
     typeof Audio !== "undefined",
+  mode: "home",
 };
 
 const listeners = new Set();
@@ -132,8 +133,29 @@ function shouldStaySilent({
   spontaneous = false,
   emotion = {},
 }) {
-  if (spontaneous && kind === "initiative") {
-    return Math.random() < 0.18;
+  const arcade =
+    state.mode === "arcade";
+
+  // Arcade Zero is intentionally much more vocal.
+  if (arcade) {
+    if (
+      kind === "initiative" ||
+      kind === "surpriseBig" ||
+      kind === "laugh" ||
+      kind === "annoyed" ||
+      kind === "frustrated"
+    ) {
+      return Math.random() < 0.12;
+    }
+
+    return Math.random() < 0.28;
+  }
+
+  if (
+    spontaneous &&
+    kind === "initiative"
+  ) {
+    return Math.random() < 0.10;
   }
 
   const strong =
@@ -143,21 +165,19 @@ function shouldStaySilent({
     kind === "laugh";
 
   if (strong) {
-    return Math.random() < 0.34;
+    return Math.random() < 0.20;
   }
 
   const energy =
     clamp(emotion.energy, 0, 1);
 
-  // Silence is part of Zero's voice.
-  // Normal replies should NOT make a vocal sound every time.
+  // Home/chat: vocal, but still not on every single reply.
   const silentChance =
     energy > 0.72
-      ? 0.48
-      : 0.62;
+      ? 0.34
+      : 0.46;
 
   return Math.random() < silentChance;
-}
 
 function chooseReaction({
   mood = "replying",
@@ -265,10 +285,15 @@ async function playReaction(
 
   const now = Date.now();
 
-  // Hard anti-spam.
+  // Hard anti-spam. Arcade is deliberately snappier.
+  const hardCooldown =
+    state.mode === "arcade"
+      ? 650
+      : 1250;
+
   if (
     !force &&
-    now - lastPlayedAt < 1800
+    now - lastPlayedAt < hardCooldown
   ) {
     return false;
   }
@@ -282,10 +307,15 @@ async function playReaction(
       "initiative",
     ].includes(kind);
 
+  const strongCooldown =
+    state.mode === "arcade"
+      ? 1900
+      : 3600;
+
   if (
     !force &&
     strong &&
-    now - lastStrongAt < 5200
+    now - lastStrongAt < strongCooldown
   ) {
     return false;
   }
@@ -425,7 +455,105 @@ export const zeroVoice = {
     );
   },
 
-  // Used only internally if we later want a specific local reaction.
+  setMode(mode = "home") {
+    state.mode =
+      mode === "arcade"
+        ? "arcade"
+        : "home";
+
+    emit();
+  },
+
+  arcadePulse() {
+    if (
+      !state.enabled ||
+      state.mode !== "arcade"
+    ) {
+      return false;
+    }
+
+    const roll = Math.random();
+
+    const kind =
+      roll < 0.20
+        ? "initiative"
+        : roll < 0.38
+          ? "laugh"
+          : roll < 0.56
+            ? "approve"
+            : roll < 0.72
+              ? "realize"
+              : roll < 0.86
+                ? "think"
+                : "confused";
+
+    return playReaction(
+      kind,
+      {
+        emotion: {
+          energy: 0.78,
+          humor: 0.46,
+          surprise: 0.18,
+          warmth: 0.5,
+        },
+        force: false,
+      }
+    );
+  },
+
+  gameResult(result = "") {
+    const value =
+      String(result).toLowerCase();
+
+    // Result is from the USER's perspective in the current Arcade flow.
+    // User win => Zero lost.
+    if (value === "win") {
+      return playReaction(
+        Math.random() < 0.58
+          ? "frustrated"
+          : "annoyed",
+        {
+          emotion: {
+            annoyance: 0.72,
+            energy: 0.72,
+          },
+          force: true,
+        }
+      );
+    }
+
+    if (
+      value === "loss" ||
+      value === "lose"
+    ) {
+      return playReaction(
+        Math.random() < 0.55
+          ? "laugh"
+          : "initiative",
+        {
+          emotion: {
+            humor: 0.76,
+            energy: 0.86,
+          },
+          force: true,
+        }
+      );
+    }
+
+    return playReaction(
+      Math.random() < 0.5
+        ? "think"
+        : "realize",
+      {
+        emotion: {
+          energy: 0.52,
+        },
+        force: true,
+      }
+    );
+  },
+
+  // Used internally for a specific local reaction.
   play(kind, options = {}) {
     return playReaction(
       kind,

@@ -392,13 +392,14 @@ function CenterReply({
 
     const timer =
       window.setTimeout(() => {
-        zeroVoice.react({
-          mood,
-          action,
-          emotion,
-          spontaneous,
-        });
-      }, spontaneous ? 90 : 170);
+        zeroVoice.speak(
+          reply,
+          {
+            language,
+            mood,
+          }
+        );
+      }, 220);
 
     return () => {
       window.clearTimeout(timer);
@@ -406,8 +407,7 @@ function CenterReply({
   }, [
     reply,
     loading,
-    action,
-    spontaneous,
+    language,
   ]);
 
   const humor = Number(emotion?.humor || 0);
@@ -1401,10 +1401,52 @@ const followUpTimeoutRef = useRef(null);
   ]);
 
   useEffect(() => {
-    zeroAudio.setMode(
-      arcadeOpen && arcadeGameActive ? "arcade" : "home"
-    );
+    const nextMode =
+      arcadeOpen && arcadeGameActive
+        ? "arcade"
+        : "home";
+
+    zeroAudio.setMode(nextMode);
+    zeroVoice.setMode(nextMode);
   }, [arcadeOpen, arcadeGameActive]);
+
+  useEffect(() => {
+    if (
+      !arcadeOpen ||
+      !arcadeGameActive
+    ) {
+      return undefined;
+    }
+
+    let timer = null;
+
+    const scheduleNext = () => {
+      const delay =
+        4200 +
+        Math.random() * 4200;
+
+      timer = window.setTimeout(() => {
+        zeroVoice.arcadePulse();
+        scheduleNext();
+      }, delay);
+    };
+
+    // First little reaction shortly after the actual game starts.
+    timer = window.setTimeout(() => {
+      zeroVoice.arcadePulse();
+      scheduleNext();
+    }, 1700 + Math.random() * 1400);
+
+    return () => {
+      if (timer) {
+        window.clearTimeout(timer);
+      }
+    };
+  }, [
+    arcadeOpen,
+    arcadeGameActive,
+  ]);
+
 
 
   useEffect(() => {
@@ -2304,6 +2346,10 @@ useEffect(() => {
 ]);
 
 const handleGameFinish = (gameEvent) => {
+  zeroVoice.gameResult(
+    gameEvent?.result || ""
+  );
+
   setLivingCore((previous) =>
     addCareXP(
       recordLivingGame(previous, gameEvent.result),
@@ -2922,6 +2968,7 @@ if (!appReady) {
       onMusicVolume={(value) => zeroAudio.setVolume(value)}
       voiceState={voiceState}
       onToggleVoice={() => zeroVoice.toggle()}
+      onTestVoice={() => zeroVoice.test(language)}
       onClose={() => setSettingsOpen(false)}
     />
   ) : null}
