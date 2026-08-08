@@ -5,6 +5,7 @@ export const ZERO_CONFIG = Object.freeze({
 
   chat: {
     maxUserChars: 2000,
+    maxZeroReplyChars: 420,
     recentHistoryMessages: 8,
     recentHistoryMaxAgeMs: 30 * 60 * 1000,
     starterTurns: 8,
@@ -64,9 +65,9 @@ export const ZERO_CONFIG = Object.freeze({
         short: "MEM",
         unlockEnergy: 32,
       },
-      twentyone: {
-        label: "Duel 21",
-        short: "21",
+      tapduel: {
+        label: "Tap Duel",
+        short: "TAP",
         unlockEnergy: 48,
       },
       secret: {

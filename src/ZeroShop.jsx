@@ -6,75 +6,114 @@ import {
   buyCosmetic,
   equipCosmetic,
   getShopCatalog,
+  resetCosmetics,
 } from "./zero-wallet";
 
 import { gameSfx } from "./zero-game-sfx";
-import { getZeroCopy } from "./zero-i18n";
 
-const ITEM_COPY = {
+const COPY = {
+  fr: {
+    title: "Shop",
+    style: "Style",
+    boosts: "Boosts",
+    reset: "Remettre par défaut",
+    backgrounds: "Décors",
+    eyes: "Lueurs",
+    effects: "Ambiance",
+    accessories: "Accessoires",
+    owned: "acheté",
+    equipped: "équipé",
+    equip: "mettre",
+    notEnough: "pas assez de coins",
+    unlocked: "débloqué",
+    activated: "activé",
+    clean: "des petits changements propres, pas un déguisement",
+    boostHint: "des boosts utiles, pas obligatoires",
+  },
+
   en: {
-    bg_void: ["Deep Void", "Zero's original black"],
-    bg_aurora: ["Aurora Room", "moving cyan and violet veils"],
-    bg_sunset: ["Sunset Room", "peach sky, pink horizon, soft light"],
-    bg_arcade: ["Dream Arcade", "neon grid and slow stars"],
-    bg_aquarium: ["Aquarium", "water glow and calm bubbles"],
-    bg_cloud: ["Cloud Nine", "floating pastel clouds"],
-    eyes_violet: ["Violet Pulse", "electric violet eyes"],
-    eyes_cyan: ["Aqua Pulse", "bright cyan eyes"],
-    eyes_peach: ["Sunset Glow", "peach and pink eyes"],
-    eyes_prism: ["Prism", "soft multicolor reflection"],
-    fx_orbit: ["Orbit", "two stars orbit around Zero"],
-    fx_stardust: ["Stardust", "floating star dust"],
-    fx_echo: ["Echo", "ghost waves around him"],
-    fx_fireflies: ["Fireflies", "warm little lights drifting around"],
-    fx_glitch: ["Soft Glitch", "small digital shifts now and then"],
-    accessory_crown: ["Float Crown", "a floating crown above his eyes"],
-    accessory_headphones: ["Zero Phones", "futuristic headphones around him"],
-    accessory_horns: ["Little Horns", "two small glowing horns"],
-    accessory_visor: ["Visor", "a holographic visor over his eyes"],
-    accessory_wings: ["Mini Wings", "small glowing wings on the sides"],
-    accessory_shards: ["Shards", "crystal fragments around the Core"],
-    boost_core_20: ["Core Rush", "Core ×1.5 for 20 min"],
-    boost_coins_3: ["Win Spark", "coins ×2 for your next 3 wins"],
-    boost_arcade_60: ["Arcade Key", "all games open for 60 min"],
+    title: "Shop",
+    style: "Style",
+    boosts: "Boosts",
+    reset: "Reset to default",
+    backgrounds: "Rooms",
+    eyes: "Glow",
+    effects: "Atmosphere",
+    accessories: "Accessories",
+    owned: "owned",
+    equipped: "equipped",
+    equip: "equip",
+    notEnough: "not enough coins",
+    unlocked: "unlocked",
+    activated: "activated",
+    clean: "clean little changes, not a costume",
+    boostHint: "useful boosts, never required",
   },
 
   id: {
-    bg_void: ["Deep Void", "hitam originalnya Zero"],
-    bg_aurora: ["Aurora Room", "aurora cyan dan ungu yang bergerak"],
-    bg_sunset: ["Sunset Room", "langit peach, horizon pink, cahaya lembut"],
-    bg_arcade: ["Dream Arcade", "grid neon dan bintang yang bergerak pelan"],
-    bg_aquarium: ["Aquarium", "cahaya air dan gelembung yang tenang"],
-    bg_cloud: ["Cloud Nine", "awan pastel yang melayang"],
-    eyes_violet: ["Violet Pulse", "mata ungu elektrik"],
-    eyes_cyan: ["Aqua Pulse", "mata cyan terang"],
-    eyes_peach: ["Sunset Glow", "mata peach dan pink"],
-    eyes_prism: ["Prism", "pantulan warna halus"],
-    fx_orbit: ["Orbit", "dua bintang mengorbit Zero"],
-    fx_stardust: ["Stardust", "debu bintang yang melayang"],
-    fx_echo: ["Echo", "gelombang bayangan di sekitar Zero"],
-    fx_fireflies: ["Fireflies", "lampu kecil hangat yang beterbangan"],
-    fx_glitch: ["Soft Glitch", "glitch digital kecil sesekali"],
-    accessory_crown: ["Float Crown", "mahkota melayang di atas matanya"],
-    accessory_headphones: ["Zero Phones", "headphone futuristik di sekitar Zero"],
-    accessory_horns: ["Little Horns", "dua tanduk kecil bercahaya"],
-    accessory_visor: ["Visor", "visor holografik di depan mata"],
-    accessory_wings: ["Mini Wings", "sayap kecil bercahaya di samping"],
-    accessory_shards: ["Shards", "pecahan kristal di sekitar Core"],
-    boost_core_20: ["Core Rush", "Core ×1.5 selama 20 menit"],
-    boost_coins_3: ["Win Spark", "koin ×2 untuk 3 kemenangan berikutnya"],
-    boost_arcade_60: ["Arcade Key", "semua game terbuka 60 menit"],
+    title: "Toko",
+    style: "Style",
+    boosts: "Boost",
+    reset: "Balikin ke default",
+    backgrounds: "Ruangan",
+    eyes: "Glow",
+    effects: "Suasana",
+    accessories: "Aksesori",
+    owned: "punya",
+    equipped: "dipakai",
+    equip: "pakai",
+    notEnough: "koinnya kurang",
+    unlocked: "kebuka",
+    activated: "aktif",
+    clean: "perubahan kecil yang rapi, bukan kostum rame",
+    boostHint: "boost berguna, tapi nggak wajib",
   },
 };
 
-function localizedItem(item, language) {
-  const translated = ITEM_COPY[language]?.[item.id];
+const LOCAL_ITEMS = {
+  en: {
+    bg_void: ["Original", "Zero's original room"],
+    bg_sunset: ["Sunset", "a warm, soft sunset"],
+    bg_aquarium: ["Blue Room", "calm blue light and water reflections"],
+    bg_cloud: ["Cloud Room", "pastel sky with slow clouds"],
+    eyes_violet: ["Lavender", "soft violet glow"],
+    eyes_cyan: ["Aqua", "soft cyan glow"],
+    eyes_peach: ["Warm", "warm pinkish glow"],
+    fx_fireflies: ["Fireflies", "a few warm lights around Zero"],
+    fx_stardust: ["Soft Stars", "small, quiet stars"],
+    accessory_crown: ["Crown", "a clean little floating crown"],
+    accessory_headphones: ["Headphones", "simple headphones around Zero"],
+    accessory_beanie: ["Beanie", "a soft beanie above his eyes"],
+    boost_core_20: ["Core Boost", "Core ×1.5 for 20 min"],
+    boost_coins_3: ["Win Bonus", "coins ×2 for your next 3 wins"],
+  },
 
-  return translated
+  id: {
+    bg_void: ["Original", "ruangan asli Zero"],
+    bg_sunset: ["Sunset", "senja yang hangat dan lembut"],
+    bg_aquarium: ["Blue Room", "cahaya biru tenang dengan pantulan air"],
+    bg_cloud: ["Cloud Room", "langit pastel dengan awan pelan"],
+    eyes_violet: ["Lavender", "glow ungu yang lembut"],
+    eyes_cyan: ["Aqua", "glow cyan yang lembut"],
+    eyes_peach: ["Warm", "glow hangat agak pink"],
+    fx_fireflies: ["Fireflies", "beberapa cahaya hangat di sekitar Zero"],
+    fx_stardust: ["Soft Stars", "bintang kecil yang tenang"],
+    accessory_crown: ["Crown", "mahkota kecil yang melayang"],
+    accessory_headphones: ["Headphones", "headphone simpel di sekitar Zero"],
+    accessory_beanie: ["Beanie", "beanie lembut di atas matanya"],
+    boost_core_20: ["Core Boost", "Core ×1.5 selama 20 menit"],
+    boost_coins_3: ["Win Bonus", "koin ×2 untuk 3 kemenangan berikutnya"],
+  },
+};
+
+function translated(item, language) {
+  const local = LOCAL_ITEMS[language]?.[item.id];
+
+  return local
     ? {
         ...item,
-        label: translated[0],
-        description: translated[1],
+        label: local[0],
+        description: local[1],
       }
     : item;
 }
@@ -90,173 +129,38 @@ function Coin({ small = false }) {
   );
 }
 
-function CosmeticPreview({ item, equipped }) {
+function Preview({ item }) {
   return (
-    <div
-      className={[
-        "zero-shop-preview",
-        `is-${item.preview || "violet"}`,
-        item.id,
-        equipped ? "is-equipped" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
-    >
-      <div className="zero-shop-preview-eyes">
+    <div className={`zero63-shop-preview ${item.id}`}>
+      <div className="zero63-preview-eyes">
         <i />
         <i />
       </div>
 
-      {item.type === "effect" ? (
-        <div className={`zero-shop-preview-effect ${item.id}`}>
-          <i />
-          <i />
-          <i />
-        </div>
+      {item.id === "accessory_crown" ? (
+        <span className="zero63-preview-crown" />
       ) : null}
 
-      {item.type === "accessory" ? (
-        <div
-          className={`zero-shop-preview-accessory ${item.id}`}
-        >
+      {item.id === "accessory_headphones" ? (
+        <span className="zero63-preview-headphones" />
+      ) : null}
+
+      {item.id === "accessory_beanie" ? (
+        <span className="zero63-preview-beanie" />
+      ) : null}
+
+      {item.id === "fx_fireflies" ? (
+        <span className="zero63-preview-fireflies">
           <i />
           <i />
           <i />
-        </div>
+        </span>
+      ) : null}
+
+      {item.id === "fx_stardust" ? (
+        <span className="zero63-preview-stars">✦ · ✦</span>
       ) : null}
     </div>
-  );
-}
-
-function ShopItem({
-  item,
-  wallet,
-  onWallet,
-  onToast,
-  copy,
-  language,
-}) {
-  item = localizedItem(item, language);
-
-  const owned = wallet.owned.includes(item.id);
-  const equipped =
-    wallet.equipped?.[item.type] === item.id;
-
-  const afford =
-    Number(wallet.coins || 0) >= Number(item.price || 0);
-
-  const buy = () => {
-    if (equipped) {
-      gameSfx.soft();
-      return;
-    }
-
-    if (owned) {
-      gameSfx.tap();
-      onWallet(equipCosmetic(wallet, item));
-      onToast(`${item.label} · ${copy.common.equipped}`);
-      return;
-    }
-
-    const next = buyCosmetic(wallet, item);
-
-    if (!next) {
-      gameSfx.error();
-      onToast(copy.shop.notEnough);
-      return;
-    }
-
-    gameSfx.buy();
-    onWallet(next);
-    onToast(`${item.label} · ${copy.shop.unlocked}`);
-  };
-
-  return (
-    <motion.button
-      type="button"
-      className={[
-        "zero-shop-item",
-        equipped ? "is-equipped" : "",
-        !afford && !owned ? "is-expensive" : "",
-      ]
-        .filter(Boolean)
-        .join(" ")}
-      onClick={buy}
-      whileTap={{ scale: 0.97 }}
-      whileHover={{ y: -3 }}
-    >
-      <CosmeticPreview
-        item={item}
-        equipped={equipped}
-      />
-
-      <div className="zero-shop-item-copy">
-        <strong>{item.label}</strong>
-        <small>{item.description}</small>
-      </div>
-
-      <div className="zero-shop-item-price">
-        {equipped ? (
-          <span>équipé</span>
-        ) : owned ? (
-          <span>mettre</span>
-        ) : (
-          <>
-            <Coin small />
-            <span>{item.price}</span>
-          </>
-        )}
-      </div>
-    </motion.button>
-  );
-}
-
-function BoostItem({
-  item,
-  wallet,
-  onWallet,
-  onToast,
-  copy,
-  language,
-}) {
-  item = localizedItem(item, language);
-
-  const buy = () => {
-    const next = buyBoost(wallet, item);
-
-    if (!next) {
-      gameSfx.error();
-      onToast(copy.shop.notEnough);
-      return;
-    }
-
-    gameSfx.buy();
-    onWallet(next);
-    onToast(`${item.label} · ${copy.shop.activated}`);
-  };
-
-  return (
-    <motion.button
-      type="button"
-      className="zero-shop-boost"
-      onClick={buy}
-      whileTap={{ scale: 0.97 }}
-      whileHover={{ y: -2 }}
-    >
-      <span className="zero-shop-boost-icon">
-        <i />
-      </span>
-
-      <span>
-        <strong>{item.label}</strong>
-        <small>{item.description}</small>
-      </span>
-
-      <span className="zero-shop-boost-price">
-        <Coin small />
-        {item.price}
-      </span>
-    </motion.button>
   );
 }
 
@@ -267,178 +171,250 @@ export default function ZeroShop({
   onClose,
   language = "fr",
 }) {
-  const [tab, setTab] = useState("cosmetics");
-  const copy = getZeroCopy(language);
+  const [tab, setTab] = useState("style");
   const [toast, setToast] = useState("");
 
-  const catalog = useMemo(
-    () => getShopCatalog(),
-    []
-  );
+  const copy = COPY[language] || COPY.fr;
+  const catalog = useMemo(() => getShopCatalog(), []);
 
-  const showToast = (text) => {
-    setToast(text);
-
-    window.setTimeout(() => {
-      setToast("");
-    }, 1800);
+  const show = (message) => {
+    setToast(message);
+    window.setTimeout(() => setToast(""), 1600);
   };
 
   if (!open) return null;
 
+  const categories = [
+    ["background", copy.backgrounds],
+    ["eyes", copy.eyes],
+    ["effect", copy.effects],
+    ["accessory", copy.accessories],
+  ];
+
+  const handleItem = (rawItem) => {
+    const item = translated(rawItem, language);
+    const owned = wallet.owned.includes(item.id);
+    const equipped =
+      wallet.equipped?.[item.type] === item.id;
+
+    if (equipped) {
+      gameSfx.soft();
+      return;
+    }
+
+    if (owned) {
+      onWallet(equipCosmetic(wallet, item));
+      gameSfx.tap();
+      show(`${item.label} · ${copy.equipped}`);
+      return;
+    }
+
+    const next = buyCosmetic(wallet, item);
+
+    if (!next) {
+      gameSfx.error();
+      show(copy.notEnough);
+      return;
+    }
+
+    onWallet(next);
+    gameSfx.buy();
+    show(`${item.label} · ${copy.unlocked}`);
+  };
+
+  const handleBoost = (rawItem) => {
+    const item = translated(rawItem, language);
+    const next = buyBoost(wallet, item);
+
+    if (!next) {
+      gameSfx.error();
+      show(copy.notEnough);
+      return;
+    }
+
+    onWallet(next);
+    gameSfx.buy();
+    show(`${item.label} · ${copy.activated}`);
+  };
+
   return (
     <motion.div
-      className="zero-shop"
+      className="zero63-shop"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      <div className="zero-shop-bg-orb zero-shop-bg-orb-a" />
-      <div className="zero-shop-bg-orb zero-shop-bg-orb-b" />
-
-      <header className="zero-shop-head">
+      <header className="zero63-shop-head">
         <motion.button
           type="button"
-          onClick={() => {
-            gameSfx.tap();
-            onClose();
-          }}
           whileTap={{ scale: 0.9 }}
+          onClick={onClose}
         >
           ←
         </motion.button>
 
         <div>
-          <small>ZERO STORE</small>
-          <strong>{copy.shop.title}</strong>
+          <small>ZERO</small>
+          <strong>{copy.title}</strong>
         </div>
 
-        <div className="zero-wallet-pill">
+        <div className="zero63-shop-wallet">
           <Coin small />
           <strong>{wallet.coins}</strong>
         </div>
       </header>
 
-      <nav className="zero-shop-tabs">
-        {[
-          ["cosmetics", copy.shop.style],
-          ["boosts", copy.shop.boosts],
-        ].map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            className={tab === id ? "is-active" : ""}
-            onClick={() => {
-              gameSfx.soft();
-              setTab(id);
-            }}
-          >
-            {label}
-          </button>
-        ))}
+      <nav className="zero63-shop-tabs">
+        <button
+          type="button"
+          className={tab === "style" ? "is-active" : ""}
+          onClick={() => setTab("style")}
+        >
+          {copy.style}
+        </button>
+
+        <button
+          type="button"
+          className={tab === "boosts" ? "is-active" : ""}
+          onClick={() => setTab("boosts")}
+        >
+          {copy.boosts}
+        </button>
       </nav>
 
-      <main className="zero-shop-content">
+      <main className="zero63-shop-body">
         <AnimatePresence mode="wait">
-          {tab === "cosmetics" ? (
+          {tab === "style" ? (
             <motion.section
-              key="cosmetics"
-              className="zero-shop-cosmetics"
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -8 }}
+              key="style"
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
             >
-              <div className="zero-shop-intro">
-                <small>{copy.shop.yourZero}</small>
-                <strong>
-                  {copy.shop.changeMood}
-                </strong>
+              <div className="zero63-shop-intro">
+                <strong>{copy.style}</strong>
+                <small>{copy.clean}</small>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onWallet(resetCosmetics(wallet));
+                    gameSfx.soft();
+                    show(copy.reset);
+                  }}
+                >
+                  ↺ {copy.reset}
+                </button>
               </div>
 
-              {["background", "eyes", "effect", "accessory"].map(
-                (type) => {
-                  const labels = {
-                    background: copy.shop.backgrounds,
-                    eyes: copy.shop.eyes,
-                    effect: copy.shop.effects,
-                    accessory: copy.shop.accessories,
-                  };
+              {categories.map(([type, label]) => {
+                const items = catalog.cosmetics.filter(
+                  (item) => item.type === type
+                );
 
-                  const items = catalog.cosmetics.filter(
-                    (item) => item.type === type
-                  );
+                return (
+                  <section
+                    key={type}
+                    className="zero63-shop-category"
+                  >
+                    <h3>{label}</h3>
 
-                  return (
-                    <div
-                      key={type}
-                      className="zero-shop-category"
-                    >
-                      <div className="zero-shop-category-head">
-                        <span>{labels[type]}</span>
-                        <small>{items.length}</small>
-                      </div>
+                    <div className="zero63-shop-grid">
+                      {items.map((rawItem) => {
+                        const item = translated(rawItem, language);
+                        const owned = wallet.owned.includes(item.id);
+                        const equipped =
+                          wallet.equipped?.[item.type] === item.id;
 
-                      <div className="zero-shop-grid">
-                        {items.map((item) => (
-                          <ShopItem
+                        return (
+                          <motion.button
                             key={item.id}
-                            item={item}
-                            wallet={wallet}
-                            onWallet={onWallet}
-                            onToast={showToast}
-                            copy={copy}
-                            language={language}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                }
-              )}
-            </motion.section>
-          ) : null}
+                            type="button"
+                            className={[
+                              "zero63-shop-card",
+                              equipped ? "is-equipped" : "",
+                            ]
+                              .filter(Boolean)
+                              .join(" ")}
+                            whileTap={{ scale: 0.97 }}
+                            onClick={() => handleItem(rawItem)}
+                          >
+                            <Preview item={item} />
 
-          {tab === "boosts" ? (
+                            <span className="zero63-shop-card-copy">
+                              <strong>{item.label}</strong>
+                              <small>{item.description}</small>
+                            </span>
+
+                            <span className="zero63-shop-card-action">
+                              {equipped ? (
+                                copy.equipped
+                              ) : owned ? (
+                                copy.equip
+                              ) : (
+                                <>
+                                  <Coin small />
+                                  {item.price}
+                                </>
+                              )}
+                            </span>
+                          </motion.button>
+                        );
+                      })}
+                    </div>
+                  </section>
+                );
+              })}
+            </motion.section>
+          ) : (
             <motion.section
               key="boosts"
-              className="zero-shop-boosts"
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -8 }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
             >
-              <div className="zero-shop-intro">
-                <small>{copy.shop.boosts.toUpperCase()}</small>
-                <strong>
-                  {copy.shop.boostIntro}
-                </strong>
+              <div className="zero63-shop-intro">
+                <strong>{copy.boosts}</strong>
+                <small>{copy.boostHint}</small>
               </div>
 
-              <div className="zero-shop-boost-list">
-                {catalog.boosts.map((item) => (
-                  <BoostItem
-                    key={item.id}
-                    item={item}
-                    wallet={wallet}
-                    onWallet={onWallet}
-                    onToast={showToast}
-                    copy={copy}
-                    language={language}
-                  />
-                ))}
-              </div>
+              <div className="zero63-boost-list">
+                {catalog.boosts.map((rawItem) => {
+                  const item = translated(rawItem, language);
 
-              <p className="zero-shop-footnote">
-                {copy.shop.noAffection}
-              </p>
+                  return (
+                    <motion.button
+                      key={item.id}
+                      type="button"
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleBoost(rawItem)}
+                    >
+                      <span className="zero63-boost-mark">
+                        {item.effect === "core" ? "♥" : "×2"}
+                      </span>
+
+                      <span>
+                        <strong>{item.label}</strong>
+                        <small>{item.description}</small>
+                      </span>
+
+                      <span className="zero63-boost-price">
+                        <Coin small />
+                        {item.price}
+                      </span>
+                    </motion.button>
+                  );
+                })}
+              </div>
             </motion.section>
-          ) : null}
+          )}
         </AnimatePresence>
       </main>
 
       <AnimatePresence>
         {toast ? (
           <motion.div
-            className="zero-shop-toast"
+            className="zero63-shop-toast"
             initial={{ opacity: 0, y: 8, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 5 }}

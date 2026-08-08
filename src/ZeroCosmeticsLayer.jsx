@@ -90,6 +90,12 @@ export default function ZeroCosmeticsLayer({ wallet }) {
         </div>
       ) : null}
 
+      {state.accessory === "accessory_beanie" ? (
+        <div className="zero63-accessory-beanie">
+          <i />
+        </div>
+      ) : null}
+
       {state.accessory === "accessory_horns" ? (
         <div className="zero-accessory-horns">
           <i />

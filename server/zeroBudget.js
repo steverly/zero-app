@@ -4,7 +4,7 @@ export const SERVER_LIMITS = Object.freeze({
   maxUserChars: 2000,
   maxHistoryMessages: 8,
   maxHistoryCharsEach: 600,
-  maxReplyChars: 680,
+  maxReplyChars: 420,
   maxFollowUpChars: 220,
 });
 
@@ -41,28 +41,28 @@ export function chooseReplyBudget(message) {
 
   if (explicitlyDetailed) {
     return {
-      maxTokens: 260,
+      maxTokens: 190,
       maxChars: SERVER_LIMITS.maxReplyChars,
     };
   }
 
   if (length <= 24) {
     return {
-      maxTokens: 150,
-      maxChars: 260,
+      maxTokens: 95,
+      maxChars: 180,
     };
   }
 
   if (length <= 140) {
     return {
-      maxTokens: 190,
-      maxChars: 430,
+      maxTokens: 135,
+      maxChars: 280,
     };
   }
 
   return {
-    maxTokens: 230,
-    maxChars: 580,
+    maxTokens: 170,
+    maxChars: 380,
   };
 }
 

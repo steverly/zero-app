@@ -1284,218 +1284,197 @@ function MemoryDuel({
 }
 
 // =====================================================
-// DUEL 21
+// TAP DUEL
 // =====================================================
 
-function drawCard() {
-  return Math.min(
-    10,
-    Math.floor(Math.random() * 13) + 1
-  );
-}
-
-function handTotal(hand) {
-  return hand.reduce(
-    (sum, value) => sum + value,
-    0
-  );
-}
-
-function TwentyOne({
+function TapDuel({
   relationship,
   onFinish,
   language = "fr",
 }) {
-  const copy = getZeroCopy(language);
-  const newHand = () =>
-    [drawCard(), drawCard()];
+  const target = 20;
 
-  const [user, setUser] =
-    useState(newHand);
+  const copy = {
+    fr: {
+      ready: "20 taps. premier arrivé.",
+      tap: "TAP",
+      you: "toi",
+      zero: "Zero",
+      again: "encore",
+    },
+    en: {
+      ready: "20 taps. first one there.",
+      tap: "TAP",
+      you: "you",
+      zero: "Zero",
+      again: "again",
+    },
+    id: {
+      ready: "20 tap. siapa duluan.",
+      tap: "TAP",
+      you: "kamu",
+      zero: "Zero",
+      again: "lagi",
+    },
+  }[language] || {
+    ready: "20 taps. premier arrivé.",
+    tap: "TAP",
+    you: "toi",
+    zero: "Zero",
+    again: "encore",
+  };
 
-  const [zero, setZero] =
-    useState(newHand);
+  const [userScore, setUserScore] = useState(0);
+  const [zeroScore, setZeroScore] = useState(0);
+  const [started, setStarted] = useState(false);
+  const [done, setDone] = useState(false);
+  const [line, setLine] = useState(copy.ready);
+  const finishedRef = useRef(false);
 
-  const [done, setDone] =
-    useState(false);
+  useEffect(() => {
+    if (!started || done) return;
 
-  const [line, setLine] =
-    useState(copy.arcade.twentyOne);
-
-  const finish = (
-    userHand,
-    zeroHand
-  ) => {
-    const u = handTotal(userHand);
-    const z = handTotal(zeroHand);
-
-    const result =
-      u > 21
-        ? "loss"
-        : z > 21
-          ? "win"
-          : u > z
-            ? "win"
-            : u < z
-              ? "loss"
-              : "draw";
-
-    setDone(true);
-
-    setLine(
-      localComment(
-        result === "win"
-          ? "userWin"
-          : result === "loss"
-            ? "zeroWin"
-            : "draw",
-        relationship,
-        language
-      )
+    const familiarity = Number(
+      relationship?.traits?.familiarity || 0.08
     );
 
-    onFinish({
-      gameId: "twentyone",
-      result,
-    });
-  };
+    const base =
+      250 - familiarity * 55;
 
-  const hit = () => {
+    const timer = window.setInterval(() => {
+      setZeroScore((previous) => {
+        if (previous >= target - 1) {
+          return target;
+        }
+
+        return previous + 1;
+      });
+    }, Math.max(135, base + Math.random() * 75));
+
+    return () => window.clearInterval(timer);
+  }, [started, done, relationship]);
+
+  useEffect(() => {
+    if (finishedRef.current) return;
+
+    if (userScore >= target) {
+      finishedRef.current = true;
+      setDone(true);
+      setLine(
+        localComment(
+          "userWin",
+          relationship,
+          language
+        )
+      );
+      onFinish({
+        gameId: "tapduel",
+        result: "win",
+      });
+      return;
+    }
+
+    if (zeroScore >= target) {
+      finishedRef.current = true;
+      setDone(true);
+      setLine(
+        localComment(
+          "zeroWin",
+          relationship,
+          language
+        )
+      );
+      onFinish({
+        gameId: "tapduel",
+        result: "loss",
+      });
+    }
+  }, [
+    userScore,
+    zeroScore,
+    relationship,
+    language,
+    onFinish,
+  ]);
+
+  const tap = () => {
     if (done) return;
 
-    gameSfx.piece();
-
-    const next =
-      [...user, drawCard()];
-
-    setUser(next);
-
-    if (handTotal(next) > 21) {
-      finish(next, zero);
-    }
-  };
-
-  const stand = () => {
-    if (done) return;
-
-    let nextZero = [...zero];
-
-    while (
-      handTotal(nextZero) < 17
-    ) {
-      nextZero = [
-        ...nextZero,
-        drawCard(),
-      ];
+    if (!started) {
+      setStarted(true);
+      setLine("...");
     }
 
-    setZero(nextZero);
-    finish(user, nextZero);
+    gameSfx.tap();
+
+    setUserScore((previous) =>
+      Math.min(target, previous + 1)
+    );
   };
 
   const restart = () => {
-    gameSfx.tap();
-    setUser(newHand());
-    setZero(newHand());
+    gameSfx.soft();
+    finishedRef.current = false;
+    setUserScore(0);
+    setZeroScore(0);
+    setStarted(false);
     setDone(false);
-    setLine(copy.arcade.twentyOne);
+    setLine(copy.ready);
   };
 
   return (
-    <div className="zero-game zero-game-21">
+    <div className="zero-game zero-game-tapduel">
       <ZeroLine>{line}</ZeroLine>
 
-      <div className="zero-21-table">
-        <div>
-          <small>Zero</small>
+      <div className="zero63-tap-race">
+        <div className="zero63-tap-score">
+          <span>
+            <small>{copy.you}</small>
+            <strong>{userScore}</strong>
+          </span>
 
-          <div className="zero-card-row">
-            {zero.map(
-              (card, index) => (
-                <motion.i
-                  key={index}
-                  initial={{
-                    opacity: 0,
-                    y: -10,
-                    rotate: -5,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                    rotate:
-                      (index - 1) * 3,
-                  }}
-                >
-                  {done || index === 0
-                    ? card
-                    : "?"}
-                </motion.i>
-              )
-            )}
-          </div>
+          <i>20</i>
 
-          <strong>
-            {done
-              ? handTotal(zero)
-              : `${zero[0]} + ?`}
-          </strong>
+          <span className="is-zero">
+            <small>{copy.zero}</small>
+            <strong>{zeroScore}</strong>
+          </span>
         </div>
 
-        <span className="zero-21-divider">
-          ×
-        </span>
-
-        <div>
-          <small>{copy.arcade.you}</small>
-
-          <div className="zero-card-row is-user">
-            {user.map(
-              (card, index) => (
-                <motion.i
-                  key={index}
-                  initial={{
-                    opacity: 0,
-                    y: 10,
-                    rotate: 5,
-                  }}
-                  animate={{
-                    opacity: 1,
-                    y: 0,
-                    rotate:
-                      (index - 1) * -3,
-                  }}
-                >
-                  {card}
-                </motion.i>
-              )
-            )}
+        <div className="zero63-tap-bars">
+          <div>
+            <motion.i
+              animate={{
+                scaleX:
+                  Math.min(1, userScore / target),
+              }}
+            />
           </div>
 
-          <strong>
-            {handTotal(user)}
-          </strong>
+          <div className="is-zero">
+            <motion.i
+              animate={{
+                scaleX:
+                  Math.min(1, zeroScore / target),
+              }}
+            />
+          </div>
         </div>
+
+        <motion.button
+          type="button"
+          className="zero63-tap-button"
+          onClick={tap}
+          disabled={done}
+          whileTap={{ scale: 0.93 }}
+        >
+          {copy.tap}
+        </motion.button>
       </div>
 
-      {!done ? (
-        <div className="zero-21-actions">
-          <button
-            type="button"
-            onClick={hit}
-          >
-            tirer
-          </button>
-
-          <button
-            type="button"
-            onClick={stand}
-          >
-            rester
-          </button>
-        </div>
-      ) : (
+      {done ? (
         <GameAgain onClick={restart} />
-      )}
+      ) : null}
     </div>
   );
 }
@@ -2105,8 +2084,8 @@ export default function ZeroArcade({
         />
       ) : null}
 
-      {gameId === "twentyone" ? (
-        <TwentyOne
+      {gameId === "tapduel" ? (
+        <TapDuel
           relationship={relationship}
           onFinish={finish}
           language={language}

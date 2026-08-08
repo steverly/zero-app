@@ -83,6 +83,41 @@ export default function ZeroCorePanel({
   language = "fr",
 }) {
   const copy = getZeroCopy(language);
+
+  const gameLoopCopy = {
+    fr: {
+      title: "Fais grandir ton Zero",
+      text: "parle avec lui, joue avec lui, laisse votre dynamique se construire",
+      talk: "discuter",
+      play: "jouer",
+      next: "prochain stade",
+      open: "ouvrir",
+    },
+    en: {
+      title: "Grow your Zero",
+      text: "talk to him, play with him, let your dynamic build over time",
+      talk: "chat",
+      play: "play",
+      next: "next stage",
+      open: "open",
+    },
+    id: {
+      title: "Kembangin Zero kamu",
+      text: "ngobrol, main bareng, biarin dinamika kalian tumbuh sendiri",
+      talk: "ngobrol",
+      play: "main",
+      next: "tahap berikutnya",
+      open: "buka",
+    },
+  }[language] || {
+    title: "Fais grandir ton Zero",
+    text: "parle avec lui, joue avec lui, laisse votre dynamique se construire",
+    talk: "discuter",
+    play: "jouer",
+    next: "prochain stade",
+    open: "ouvrir",
+  };
+
   const traits = relationship?.traits || {};
 
   const descriptorMap = {
@@ -205,6 +240,38 @@ export default function ZeroCorePanel({
                 ))}
               </div>
             </div>
+
+            <section className="zero63-core-loop">
+              <div className="zero63-core-loop-head">
+                <span className="zero63-core-loop-heart">
+                  <i />
+                </span>
+
+                <div>
+                  <strong>{gameLoopCopy.title}</strong>
+                  <small>{gameLoopCopy.text}</small>
+                </div>
+              </div>
+
+              <div className="zero63-core-loop-progress">
+                <div>
+                  <motion.i
+                    initial={false}
+                    animate={{ scaleX: Math.max(0.03, progress) }}
+                    transition={{ duration: 0.55 }}
+                  />
+                </div>
+
+                <strong>{Math.round(progress * 100)}%</strong>
+              </div>
+
+              <div className="zero63-core-loop-actions">
+                <span>💬 {gameLoopCopy.talk}</span>
+                <button type="button" onClick={onOpenArcade}>
+                  ▶ {gameLoopCopy.play}
+                </button>
+              </div>
+            </section>
 
             <div className="zero-v6-core-actions">
               <button

@@ -136,7 +136,9 @@ async function sendToBot(payload) {
   return {
     reply:
       typeof data?.reply === "string" && data.reply.trim()
-        ? data.reply.trim()
+        ? data.reply
+            .trim()
+            .slice(0, ZERO_CONFIG.chat.maxZeroReplyChars)
         : "...",
 
     emotion: data?.emotion || {
@@ -537,8 +539,20 @@ function Composer({
 
         <div className="composer-bottom">
           <div className="composer-meta">
-            <span className={`char-count ${remaining <= 20 ? "warn" : ""}`}>
-              {value.length}/{maxChars}
+            <span
+              className={[
+                "char-count",
+                value.length > 0 ? "is-active" : "",
+                remaining <= 100 ? "is-near-limit" : "",
+                remaining <= 20 ? "warn" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              aria-label={`${value.length} / ${maxChars}`}
+            >
+              <strong>{value.length}</strong>
+              <i>/</i>
+              <span>{maxChars}</span>
             </span>
             <span className="message-count">
               {isPremium
@@ -960,7 +974,7 @@ const followUpTimeoutRef = useRef(null);
         { at: 18, title: "arcade", text: "Puissance 4 est dispo" },
         { at: 26, title: "Core", text: "Zero devient plus à l’aise avec toi" },
         { at: 32, title: "arcade", text: "Mémoire Duel est dispo" },
-        { at: 48, title: "arcade", text: "Duel 21 est dispo" },
+        { at: 48, title: "arcade", text: "Tap Duel est dispo" },
         { at: 70, title: "Core", text: "votre dynamique commence à vraiment tenir" },
         { at: 72, title: "arcade", text: "Nombre secret est dispo" },
         { at: 105, title: "arcade", text: "Codebreaker est dispo" },
@@ -972,7 +986,7 @@ const followUpTimeoutRef = useRef(null);
         { at: 18, title: "arcade", text: "Connect 4 unlocked" },
         { at: 26, title: "Core", text: "Zero is getting more comfortable with you" },
         { at: 32, title: "arcade", text: "Memory Duel unlocked" },
-        { at: 48, title: "arcade", text: "21 Duel unlocked" },
+        { at: 48, title: "arcade", text: "Tap Duel unlocked" },
         { at: 70, title: "Core", text: "your dynamic is starting to settle in" },
         { at: 72, title: "arcade", text: "Secret Number unlocked" },
         { at: 105, title: "arcade", text: "Codebreaker unlocked" },
@@ -984,7 +998,7 @@ const followUpTimeoutRef = useRef(null);
         { at: 18, title: "arcade", text: "Connect 4 kebuka" },
         { at: 26, title: "Core", text: "Zero mulai makin nyaman sama kamu" },
         { at: 32, title: "arcade", text: "Duel Memori kebuka" },
-        { at: 48, title: "arcade", text: "Duel 21 kebuka" },
+        { at: 48, title: "arcade", text: "Tap Duel kebuka" },
         { at: 70, title: "Core", text: "dinamika kalian mulai makin stabil" },
         { at: 72, title: "arcade", text: "Angka Rahasia kebuka" },
         { at: 105, title: "arcade", text: "Pecahkan Kode kebuka" },
@@ -1584,6 +1598,7 @@ if (!appReady) {
             relationship={relationship}
             highlighted={rewardHighlighted}
             boosted={coreBoosted}
+            language={language}
             onClick={() => {
               gameSfx.soft();
               setCoreOpen(true);
@@ -1672,6 +1687,7 @@ if (!appReady) {
   reply={reply}
   relationship={relationship}
   feedPulse={feedPulse}
+  language={language}
 />
 
 

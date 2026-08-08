@@ -6,181 +6,139 @@ const COSMETICS = [
   {
     id: "bg_void",
     type: "background",
-    label: "Deep Void",
-    description: "le noir original de Zero",
+    label: "Original",
+    description: "le décor classique de Zero",
     price: 0,
     preview: "black",
   },
   {
-    id: "bg_aurora",
-    type: "background",
-    label: "Aurora Room",
-    description: "voiles cyan et violet qui bougent",
-    price: 260,
-    preview: "cyan",
-  },
-  {
     id: "bg_sunset",
     type: "background",
-    label: "Sunset Room",
-    description: "ciel peach, horizon rose et lumière douce",
-    price: 280,
+    label: "Sunset",
+    description: "un coucher de soleil doux et chaleureux",
+    price: 260,
     preview: "peach",
-  },
-  {
-    id: "bg_arcade",
-    type: "background",
-    label: "Dream Arcade",
-    description: "grille néon et étoiles lentes",
-    price: 320,
-    preview: "violet",
   },
   {
     id: "bg_aquarium",
     type: "background",
-    label: "Aquarium",
-    description: "lueurs d’eau et bulles calmes",
-    price: 340,
+    label: "Blue Room",
+    description: "une ambiance bleue calme avec reflets d’eau",
+    price: 300,
     preview: "cyan",
   },
   {
     id: "bg_cloud",
     type: "background",
-    label: "Cloud Nine",
-    description: "nuages pastel flottants",
-    price: 360,
+    label: "Cloud Room",
+    description: "un ciel pastel et des nuages qui flottent",
+    price: 320,
     preview: "peach",
   },
 
   {
     id: "eyes_violet",
     type: "eyes",
-    label: "Violet Pulse",
-    description: "yeux violet électrique",
-    price: 130,
+    label: "Lavender",
+    description: "une lueur violette douce",
+    price: 120,
     preview: "violet",
   },
   {
     id: "eyes_cyan",
     type: "eyes",
-    label: "Aqua Pulse",
-    description: "yeux cyan lumineux",
-    price: 140,
+    label: "Aqua",
+    description: "une lueur bleu clair",
+    price: 120,
     preview: "cyan",
   },
   {
     id: "eyes_peach",
     type: "eyes",
-    label: "Sunset Glow",
-    description: "yeux peach et rose",
-    price: 140,
+    label: "Warm",
+    description: "une lueur chaude légèrement rosée",
+    price: 120,
     preview: "peach",
   },
-  {
-    id: "eyes_prism",
-    type: "eyes",
-    label: "Prism",
-    description: "reflet multiton très léger",
-    price: 220,
-    preview: "violet",
-  },
 
-  {
-    id: "fx_orbit",
-    type: "effect",
-    label: "Orbit",
-    description: "deux étoiles tournent autour de Zero",
-    price: 220,
-    preview: "violet",
-  },
-  {
-    id: "fx_stardust",
-    type: "effect",
-    label: "Stardust",
-    description: "poussière d’étoiles flottante",
-    price: 260,
-    preview: "cyan",
-  },
-  {
-    id: "fx_echo",
-    type: "effect",
-    label: "Echo",
-    description: "ondes fantômes autour de lui",
-    price: 240,
-    preview: "violet",
-  },
   {
     id: "fx_fireflies",
     type: "effect",
     label: "Fireflies",
-    description: "petites lumières chaudes qui vivent",
-    price: 300,
+    description: "quelques petites lumières chaudes autour de Zero",
+    price: 220,
     preview: "peach",
   },
   {
-    id: "fx_glitch",
+    id: "fx_stardust",
     type: "effect",
-    label: "Soft Glitch",
-    description: "mini décalages numériques occasionnels",
-    price: 320,
+    label: "Soft Stars",
+    description: "de petites étoiles très discrètes",
+    price: 220,
     preview: "cyan",
   },
 
   {
     id: "accessory_crown",
     type: "accessory",
-    label: "Float Crown",
-    description: "couronne flottante au-dessus de ses yeux",
-    price: 360,
+    label: "Crown",
+    description: "une petite couronne flottante propre",
+    price: 280,
     preview: "peach",
   },
   {
     id: "accessory_headphones",
     type: "accessory",
-    label: "Zero Phones",
-    description: "casque futuriste autour de lui",
-    price: 420,
+    label: "Headphones",
+    description: "un vrai casque simple autour de Zero",
+    price: 320,
     preview: "violet",
   },
   {
-    id: "accessory_horns",
+    id: "accessory_beanie",
     type: "accessory",
-    label: "Little Horns",
-    description: "deux petites cornes lumineuses",
-    price: 350,
-    preview: "violet",
-  },
-  {
-    id: "accessory_visor",
-    type: "accessory",
-    label: "Visor",
-    description: "visière holographique devant les yeux",
-    price: 460,
-    preview: "cyan",
-  },
-  {
-    id: "accessory_wings",
-    type: "accessory",
-    label: "Mini Wings",
-    description: "petites ailes lumineuses sur les côtés",
-    price: 440,
-    preview: "peach",
-  },
-  {
-    id: "accessory_shards",
-    type: "accessory",
-    label: "Shards",
-    description: "fragments cristallins autour du Core",
-    price: 340,
+    label: "Beanie",
+    description: "un bonnet doux posé au-dessus de ses yeux",
+    price: 300,
     preview: "cyan",
   },
 ];
+
+const ALLOWED_COSMETIC_IDS = new Set(
+  COSMETICS.map((item) => item.id)
+);
+
+function sanitizeEquipped(equipped = {}) {
+  const next = {
+    background: "bg_void",
+    eyes: "",
+    effect: "",
+    accessory: "",
+  };
+
+  for (const type of Object.keys(next)) {
+    const id = String(equipped?.[type] || "");
+
+    if (!id) {
+      next[type] = type === "background" ? "bg_void" : "";
+      continue;
+    }
+
+    next[type] = ALLOWED_COSMETIC_IDS.has(id)
+      ? id
+      : type === "background"
+        ? "bg_void"
+        : "";
+  }
+
+  return next;
+}
 
 const BOOSTS = [
   {
     id: "boost_core_20",
     type: "boost",
-    label: "Core Rush",
+    label: "Core Boost",
     description: "Core ×1.5 pendant 20 min",
     price: 120,
     durationMs: 20 * 60 * 1000,
@@ -190,21 +148,12 @@ const BOOSTS = [
   {
     id: "boost_coins_3",
     type: "boost",
-    label: "Win Spark",
+    label: "Win Bonus",
     description: "coins ×2 sur tes 3 prochaines victoires",
     price: 150,
     effect: "winCoins",
     uses: 3,
     multiplier: 2,
-  },
-  {
-    id: "boost_arcade_60",
-    type: "boost",
-    label: "Arcade Key",
-    description: "tous les jeux ouverts 60 min",
-    price: 90,
-    durationMs: 60 * 60 * 1000,
-    effect: "arcade",
   },
 ];
 
@@ -256,10 +205,10 @@ export function loadWallet() {
       owned: Array.isArray(saved?.owned)
         ? [...new Set(["bg_void", ...saved.owned])]
         : fallback.owned,
-      equipped: {
+      equipped: sanitizeEquipped({
         ...fallback.equipped,
         ...(saved?.equipped || {}),
-      },
+      }),
       boosts: {
         ...fallback.boosts,
         ...(saved?.boosts || {}),
@@ -480,6 +429,18 @@ export function grantCoinReward(wallet, amount = 45) {
     ...addCoins(wallet, amount),
     coinRewardDay: today,
     coinRewardedToday: count + 1,
+  };
+}
+
+export function resetCosmetics(wallet) {
+  return {
+    ...wallet,
+    equipped: {
+      background: "bg_void",
+      eyes: "",
+      effect: "",
+      accessory: "",
+    },
   };
 }
 

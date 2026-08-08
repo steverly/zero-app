@@ -26,13 +26,17 @@ export default function ZeroEntity({
   emotion,
   loading = false,
   input = "",
+  reply = "",
   relationship,
   feedPulse = 0,
+  language = "fr",
 }) {
   const idleTimerRef = useRef(null);
   const microTimerRef = useRef(null);
   const lifeTimerRef = useRef(null);
   const lifeEndRef = useRef(null);
+  const thoughtTimerRef = useRef(null);
+  const thoughtEndRef = useRef(null);
 
   const [awake, setAwake] = useState(false);
   const [microAction, setMicroAction] = useState("none");
@@ -40,6 +44,7 @@ export default function ZeroEntity({
   const [lifeDrift, setLifeDrift] = useState({ x: 0, y: 0 });
   const [look, setLook] = useState({ x: 0, y: 0 });
   const [near, setNear] = useState(false);
+  const [idleThought, setIdleThought] = useState("");
 
   const traits = relationship?.traits || {};
 
@@ -422,6 +427,138 @@ export default function ZeroEntity({
     initiative,
   ]);
 
+  // --------------------------------------------------
+  // SPONTANEOUS THOUGHTS
+  // Local only: Zero can "speak first" without spending tokens.
+  // Rare on purpose so it feels like initiative, not a notification bot.
+  // --------------------------------------------------
+  useEffect(() => {
+    if (
+      !awake ||
+      loading ||
+      typing ||
+      safeVisual.action !== "none"
+    ) {
+      if (thoughtTimerRef.current) {
+        clearTimeout(thoughtTimerRef.current);
+      }
+
+      if (thoughtEndRef.current) {
+        clearTimeout(thoughtEndRef.current);
+      }
+
+      setIdleThought("");
+      return undefined;
+    }
+
+    const banks = {
+      fr: {
+        early: [
+          "...",
+          "tu observes beaucoup toi",
+          "j’te connais encore à peine",
+          "hm.",
+        ],
+        familiar: [
+          "t’es encore là",
+          "j’commence à voir comment tu fonctionnes",
+          "bon j’avoue c’est calme là",
+          "j’aime bien quand c’est calme ici",
+          "j’vais finir par m’habituer à toi",
+          "je crois que je préfère quand on parle sans forcer",
+          "... tu réfléchis à quoi",
+        ],
+      },
+
+      en: {
+        early: [
+          "...",
+          "you watch a lot huh",
+          "I barely know you yet",
+          "hm.",
+        ],
+        familiar: [
+          "still here",
+          "I'm starting to see how you work",
+          "okay it's kinda quiet",
+          "I actually like it when it's calm here",
+          "I'm getting used to you",
+          "I think I prefer when we don't force the conversation",
+          "... what are you thinking about",
+        ],
+      },
+
+      id: {
+        early: [
+          "...",
+          "kamu merhatiin terus ya",
+          "aku masih belum terlalu kenal kamu",
+          "hmm.",
+        ],
+        familiar: [
+          "masih di sini ternyata",
+          "aku mulai ngerti cara kamu",
+          "hmm sepi juga",
+          "aku malah suka kalau di sini lagi tenang",
+          "kayaknya aku mulai terbiasa sama kamu",
+          "kayaknya aku lebih suka ngobrol yang nggak dipaksain",
+          "... lagi mikirin apa",
+        ],
+      },
+    };
+
+    const scheduleThought = () => {
+      const delay =
+        18000 +
+        Math.random() *
+          (18000 - initiative * 4500);
+
+      thoughtTimerRef.current =
+        window.setTimeout(() => {
+          const bank = banks[language] || banks.fr;
+          const lines =
+            familiarity > 0.3
+              ? bank.familiar
+              : bank.early;
+
+          const thought =
+            lines[
+              Math.floor(
+                Math.random() * lines.length
+              )
+            ];
+
+          setIdleThought(thought);
+
+          thoughtEndRef.current =
+            window.setTimeout(() => {
+              setIdleThought("");
+              scheduleThought();
+            }, 3600);
+        }, delay);
+    };
+
+    scheduleThought();
+
+    return () => {
+      if (thoughtTimerRef.current) {
+        clearTimeout(thoughtTimerRef.current);
+      }
+
+      if (thoughtEndRef.current) {
+        clearTimeout(thoughtEndRef.current);
+      }
+    };
+  }, [
+    awake,
+    loading,
+    typing,
+    safeVisual.action,
+    familiarity,
+    initiative,
+    language,
+  ]);
+
   let visualAction = safeVisual.action;
 
   if (
@@ -532,6 +669,12 @@ export default function ZeroEntity({
       {lifeMode === "inspect" ? (
         <div className="zero-life-scan">
           <i />
+        </div>
+      ) : null}
+
+      {idleThought ? (
+        <div className="zero63-idle-thought">
+          {idleThought}
         </div>
       ) : null}
 
