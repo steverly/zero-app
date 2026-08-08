@@ -107,7 +107,7 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({
     ok: true,
     model: MODEL,
-    version: "zero-v6.4.2-adaptive-games-hotfix",
+    version: "zero-v6.4.3-core-crash-fix",
   });
 });
 
@@ -331,6 +331,6 @@ app.post("/api/reply", rateLimit, async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(
-    `Zero V6.4.2 lancé sur http://localhost:${PORT}`
+    `Zero V6.4.3 lancé sur http://localhost:${PORT}`
   );
 });

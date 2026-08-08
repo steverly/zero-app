@@ -8765,3 +8765,13 @@ small {
   font-size: 7.5px;
   text-align: center;
 }
+
+
+/* V6.4.3 — Core is progression only */
+.zero643-core-actions-clean {
+  grid-template-columns: 1fr !important;
+}
+
+.zero643-core-actions-clean > button {
+  width: 100%;
+}

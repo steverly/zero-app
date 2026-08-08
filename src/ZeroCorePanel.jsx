@@ -9,7 +9,6 @@ import {
 import {
   canWatchRewarded,
   formatDuration,
-  getArcadePassRemainingMs,
   getCoreBoostRemainingMs,
 } from "./zero-economy";
 
@@ -172,16 +171,9 @@ export default function ZeroCorePanel({
   const ageDays = getRelationshipAgeDays(relationship);
 
   const boostedMs = getCoreBoostRemainingMs(economy);
-  const arcadeMs = getArcadePassRemainingMs(economy);
-
   const walletCoreMs = Math.max(
     0,
     Number(wallet?.boosts?.coreUntil || 0) - Date.now()
-  );
-
-  const walletArcadeMs = Math.max(
-    0,
-    Number(wallet?.boosts?.arcadeUntil || 0) - Date.now()
   );
 
   const rewardedAvailable =
@@ -266,34 +258,8 @@ export default function ZeroCorePanel({
               </div>
             </section>
 
-            <div className="zero-v6-core-actions">
-              <button
-                type="button"
-                onClick={onOpenShop}
-              >
-                <span className="zero-coin-icon is-small">
-                  <i />
-                </span>
-
-                <span>
-                  <strong>{wallet?.coins || 0}</strong>
-                  <small>{copy.common.shop}</small>
-                </span>
-              </button>
-
-              <button
-                type="button"
-                
-              >
-                <span className="zero-v6-arcade-glyph">
-                  ✦
-                </span>
-
-                <span>
-                  <strong>{copy.common.arcade}</strong>
-                  <small>{games.length} {copy.core.games}</small>
-                </span>
-              </button>
+            <div className="zero-v6-core-actions zero643-core-actions-clean">
+              
             </div>
 
             <section className="zero-v5-core-section">
@@ -337,9 +303,7 @@ export default function ZeroCorePanel({
             
 
             {boostedMs > 0 ||
-            arcadeMs > 0 ||
-            walletCoreMs > 0 ||
-            walletArcadeMs > 0 ? (
+            walletCoreMs > 0 ? (
               <section className="zero-v5-active-perks">
                 {boostedMs > 0 ? (
                   <div>
@@ -354,17 +318,6 @@ export default function ZeroCorePanel({
                       Core ×{getWalletCoreMultiplier(wallet)}
                     </span>
                     <small>{formatDuration(walletCoreMs)}</small>
-                  </div>
-                ) : null}
-
-                {arcadeMs > 0 || walletArcadeMs > 0 ? (
-                  <div>
-                    <span>{copy.core.arcadeOpen}</span>
-                    <small>
-                      {formatDuration(
-                        Math.max(arcadeMs, walletArcadeMs)
-                      )}
-                    </small>
                   </div>
                 ) : null}
               </section>
