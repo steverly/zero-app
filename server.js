@@ -107,7 +107,7 @@ app.get("/api/health", (req, res) => {
   res.status(200).json({
     ok: true,
     model: MODEL,
-    version: "zero-v6.5.1-official-theme",
+    version: "zero-v6.6-living-core",
   });
 });
 
@@ -331,6 +331,6 @@ app.post("/api/reply", rateLimit, async (req, res) => {
 
 app.listen(PORT, () => {
   console.log(
-    `Zero V6.5.1 lancé sur http://localhost:${PORT}`
+    `Zero V6.6 lancé sur http://localhost:${PORT}`
   );
 });

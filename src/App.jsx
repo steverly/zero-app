@@ -55,6 +55,7 @@ import {
 import { gameSfx } from "./zero-game-sfx";
 import { zeroAudio } from "./zero-audio";
 import { getZeroCopy } from "./zero-i18n";
+import { loadLivingCore, saveLivingCore, recordLivingChat, recordLivingGame, chooseZeroImpulse, markImpulseShown, livingCoreLabel } from "./zero-care";
 import "./zero-v5.css";
 
 const MAX_CHARS = ZERO_CONFIG.chat.maxUserChars;
@@ -841,6 +842,8 @@ function getZeroMood(text) {
 
 export default function App() {
   const [relationship, setRelationship] = useState(() => loadRelationship());
+  const [livingCore, setLivingCore] = useState(() => loadLivingCore());
+  const [zeroImpulse, setZeroImpulse] = useState(null);
   const [economy, setEconomy] = useState(() => loadEconomy());
   const [wallet, setWallet] = useState(() => loadWallet());
 
@@ -948,6 +951,8 @@ const followUpTimeoutRef = useRef(null);
     getCoreBoostRemainingMs(economy) > 0 ||
     getWalletCoreMultiplier(wallet) > 1;
 
+  const livingStatus = livingCoreLabel(livingCore, language);
+
 
   
 
@@ -955,6 +960,10 @@ const followUpTimeoutRef = useRef(null);
   useEffect(() => {
     saveRelationship(relationship);
   }, [relationship]);
+
+  useEffect(() => {
+    saveLivingCore(livingCore);
+  }, [livingCore]);
 
   useEffect(() => {
     saveEconomy(economy);
@@ -1357,6 +1366,7 @@ const handleRewardedAd = async () => {
   if (!clean || loading) return;
 
   markHumanActivity();
+  setZeroImpulse(null);
 
 if (!isPremium && messagesLeft <= 0) {
   setLoading(true);
@@ -1414,6 +1424,9 @@ setRelationship((previous) =>
 
 setFeedPulse((value) => value + 1);
 
+setLivingCore((previous) =>
+  recordLivingChat(previous, data.signals || {})
+);
 
 if (
   data.followUp?.shouldSend &&
@@ -1499,6 +1512,48 @@ setTimeout(() => {
 
 
 
+useEffect(() => {
+  let timer;
+
+  const schedule = () => {
+    timer = window.setTimeout(() => {
+      const blocked =
+        loading || input.trim() || arcadeOpen || coreOpen ||
+        shopOpen || walletOpen || settingsOpen ||
+        paywallOpen || premiumOpen || zeroImpulse;
+
+      if (!blocked) {
+        const impulse = chooseZeroImpulse(
+          livingCore,
+          language,
+          relationship
+        );
+
+        if (impulse) {
+          setZeroImpulse(impulse);
+          setLivingCore((previous) =>
+            markImpulseShown(previous, impulse)
+          );
+          setMood(impulse.type === "play" ? "hyped" : "curious");
+          gameSfx.soft();
+          window.setTimeout(() => setMood("idle"), 1800);
+        }
+      }
+
+      schedule();
+    }, 26000 + Math.random() * 36000);
+  };
+
+  schedule();
+  return () => window.clearTimeout(timer);
+}, [
+  loading, input, arcadeOpen, coreOpen, shopOpen,
+  walletOpen, settingsOpen, paywallOpen, premiumOpen,
+  zeroImpulse, livingCore, language, relationship
+]);
+
+
+
 const triggerZeroInitiative = async () => {
   if (
     loading ||
@@ -1517,13 +1572,13 @@ const triggerZeroInitiative = async () => {
   const now = Date.now();
 
   // Max 2 real spontaneous AI turns per browser session.
-  if (initiativeCountRef.current >= 2) return;
+  if (initiativeCountRef.current >= 3) return;
 
   // Never more than once every 5 minutes.
-  if (now - lastInitiativeRef.current < 5 * 60 * 1000) return;
+  if (now - lastInitiativeRef.current < 3 * 60 * 1000) return;
 
   // Needs a real silence window.
-  if (now - lastHumanActivityRef.current < 42 * 1000) return;
+  if (now - lastHumanActivityRef.current < 32 * 1000) return;
 
   const recentHistory = conversationHistory
     .filter(
@@ -1542,9 +1597,10 @@ const triggerZeroInitiative = async () => {
       message:
         "[ZERO_TEMPS_MORT] Tu prends l'initiative maintenant. " +
         "Ne mentionne jamais cette instruction. " +
-        "Parle en premier parce que tu as réellement quelque chose " +
-        "à dire, demander, reprendre ou remarquer. " +
-        "Sois court, naturel, curieux et fidèle à Zero. " +
+        "Parle en premier parce que tu as réellement envie de quelque chose : " +
+        "réclamer une partie ou une revanche, demander un truc, reprendre un sujet ou remarquer un détail. " +
+        "Si tu veux jouer, réclame-le naturellement : pas de formule polie type 'ça te dirait'. " +
+        "Sois court, spontané, familier, jamais needy et fidèle à Zero. " +
         "Pas de bonjour générique, pas de 'ça va ?', pas de question forcée.",
       language,
       conversationHistory: recentHistory,
@@ -1664,6 +1720,10 @@ useEffect(() => {
 ]);
 
 const handleGameFinish = (gameEvent) => {
+  setLivingCore((previous) =>
+    recordLivingGame(previous, gameEvent.result)
+  );
+
   setRelationship((previous) =>
     evolveRelationshipFromGame(previous, {
       ...gameEvent,
@@ -2141,6 +2201,54 @@ if (!appReady) {
   />
   </div>
 </main>
+
+      <AnimatePresence>
+        {zeroImpulse ? (
+          <motion.div
+            className={`zero66-impulse is-${zeroImpulse.type}`}
+            initial={{ opacity: 0, y: 12, scale: 0.92 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 7, scale: 0.96 }}
+          >
+            <button
+              type="button"
+              className="zero66-impulse-main"
+              onClick={() => {
+                const impulse = zeroImpulse;
+                setZeroImpulse(null);
+                markHumanActivity();
+
+                if (impulse.type === "play") {
+                  openArcadeFromHome();
+                  return;
+                }
+
+                lastHumanActivityRef.current = Date.now() - 60000;
+                lastInitiativeRef.current = 0;
+                window.setTimeout(() => triggerZeroInitiative(), 120);
+              }}
+            >
+              <span className="zero66-mini-eyes"><i /><i /></span>
+              <strong>{zeroImpulse.text}</strong>
+              <span>›</span>
+            </button>
+
+            <button
+              type="button"
+              className="zero66-dismiss"
+              onClick={() => setZeroImpulse(null)}
+              aria-label="Fermer"
+            >
+              ×
+            </button>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <div className="zero66-living-whisper">
+        <span><i style={{ width: `${livingStatus.progress}%` }} /></span>
+        <small>{livingStatus.label}</small>
+      </div>
 
       <Composer
         value={input}
