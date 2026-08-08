@@ -13,7 +13,6 @@ export default function ZeroSettings({
   onMusicVolume,
   voiceState,
   onToggleVoice,
-  onTestVoice,
 }) {
   if (!open) return null;
 
@@ -52,33 +51,30 @@ export default function ZeroSettings({
   const voiceCopy = {
     fr: {
       title: "Voix",
-      hint: "prototype local",
+      hint: "réactions vocales de Zero",
       name: "Voix de Zero",
       on: "ON",
       off: "OFF",
-      test: "▶ TESTER LA VOIX",
-      unsupported: "pas dispo sur ce navigateur",
-      ready: "voix système",
+      unsupported: "audio indisponible",
+      ready: "voix locale",
     },
     en: {
       title: "Voice",
-      hint: "local prototype",
+      hint: "Zero's vocal reactions",
       name: "Zero voice",
       on: "ON",
       off: "OFF",
-      test: "▶ TEST VOICE",
-      unsupported: "not available in this browser",
-      ready: "system voice",
+      unsupported: "audio unavailable",
+      ready: "local voice",
     },
     id: {
       title: "Suara",
-      hint: "prototipe lokal",
+      hint: "reaksi suara Zero",
       name: "Suara Zero",
       on: "ON",
       off: "OFF",
-      test: "▶ TES SUARA",
-      unsupported: "nggak tersedia di browser ini",
-      ready: "suara sistem",
+      unsupported: "audio nggak tersedia",
+      ready: "suara lokal",
     },
   }[language] || null;
 
@@ -241,7 +237,6 @@ export default function ZeroSettings({
                 <small>
                   {voiceState?.supported
                     ? (
-                        voiceState?.voiceName ||
                         voiceCopy.ready
                       )
                     : voiceCopy.unsupported}

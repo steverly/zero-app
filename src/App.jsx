@@ -392,14 +392,13 @@ function CenterReply({
 
     const timer =
       window.setTimeout(() => {
-        zeroVoice.speak(
-          reply,
-          {
-            language,
-            mood,
-          }
-        );
-      }, 220);
+        zeroVoice.react({
+          mood,
+          action,
+          emotion,
+          spontaneous,
+        });
+      }, spontaneous ? 90 : 170);
 
     return () => {
       window.clearTimeout(timer);
@@ -407,7 +406,8 @@ function CenterReply({
   }, [
     reply,
     loading,
-    language,
+    action,
+    spontaneous,
   ]);
 
   const humor = Number(emotion?.humor || 0);
@@ -2922,7 +2922,6 @@ if (!appReady) {
       onMusicVolume={(value) => zeroAudio.setVolume(value)}
       voiceState={voiceState}
       onToggleVoice={() => zeroVoice.toggle()}
-      onTestVoice={() => zeroVoice.test(language)}
       onClose={() => setSettingsOpen(false)}
     />
   ) : null}

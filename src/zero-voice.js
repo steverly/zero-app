@@ -1,251 +1,353 @@
-const KEY = "zero_voice_enabled_v1";
+const STORAGE_KEY = "zero_voice_enabled_v2";
 
 const state = {
   enabled:
-    localStorage.getItem(KEY) === "1",
+    localStorage.getItem(STORAGE_KEY) !== "0",
   supported:
     typeof window !== "undefined" &&
-    "speechSynthesis" in window,
-  voicesReady: false,
-  voiceName: "",
+    typeof Audio !== "undefined",
 };
 
 const listeners = new Set();
-let voices = [];
-let lastText = "";
-let lastSpokenAt = 0;
 
-const SETTINGS = {
-  idle: { rate: 1.00, pitch: 0.94 },
-  replying: { rate: 1.03, pitch: 0.95 },
-  warm: { rate: 0.98, pitch: 0.98 },
-  funny: { rate: 1.07, pitch: 1.01 },
-  hyped: { rate: 1.12, pitch: 1.03 },
-  annoyed: { rate: 0.96, pitch: 0.89 },
-  sharp: { rate: 1.00, pitch: 0.88 },
-  calm: { rate: 0.95, pitch: 0.92 },
-  curious: { rate: 1.02, pitch: 0.97 },
+const BASE = "/audio/voice/";
+
+const SOUNDS = {
+  surpriseBig: `${BASE}wahh.mp3`,
+  approve: `${BASE}mmh.mp3`,
+  frustrated: `${BASE}nngh.mp3`,
+  annoyed: `${BASE}tss.mp3`,
+  laugh: `${BASE}ha.mp3`,
+  realize: `${BASE}oh.mp3`,
+  confused: `${BASE}huh.mp3`,
+  initiative: `${BASE}hey.mp3`,
+  think: `${BASE}hm.mp3`,
+  thinkLong: `${BASE}hmmm.mp3`,
 };
+
+const pools = {
+  think: ["think", "thinkLong"],
+  warm: ["approve", "realize"],
+  funny: ["laugh", "realize"],
+  surprised: ["confused", "surpriseBig", "realize"],
+  annoyed: ["annoyed", "frustrated"],
+  initiative: ["initiative", "realize"],
+};
+
+let currentAudio = null;
+let lastSound = "";
+let lastPlayedAt = 0;
+let lastStrongAt = 0;
 
 function emit() {
   const snapshot = { ...state };
-  listeners.forEach((fn) => fn(snapshot));
+  listeners.forEach((listener) =>
+    listener(snapshot)
+  );
 }
 
-function langCode(language) {
-  if (language === "en") return "en-US";
-  if (language === "id") return "id-ID";
-  return "fr-FR";
+function clamp(value, min, max) {
+  return Math.max(
+    min,
+    Math.min(max, Number(value) || 0)
+  );
 }
 
-function refreshVoices() {
-  if (!state.supported) return [];
+function pick(list = []) {
+  if (!list.length) return "";
 
-  voices =
-    window.speechSynthesis.getVoices() || [];
-
-  state.voicesReady = voices.length > 0;
-  emit();
-
-  return voices;
-}
-
-function bestVoice(language) {
-  const all =
-    voices.length
-      ? voices
-      : refreshVoices();
-
-  const exact =
-    langCode(language).toLowerCase();
-
-  const base =
-    exact.split("-")[0];
-
-  // Prefer voices from the requested language.
-  // Names vary by Windows/iOS/Android, so don't hardcode one vendor.
-  const candidates =
-    all.filter((voice) =>
-      String(voice.lang || "")
-        .toLowerCase()
-        .startsWith(base)
+  const filtered =
+    list.filter((name) =>
+      name !== lastSound
     );
 
-  const exactMatch =
-    candidates.find((voice) =>
-      String(voice.lang || "")
-        .toLowerCase() === exact
-    );
+  const pool =
+    filtered.length
+      ? filtered
+      : list;
 
-  const picked =
-    exactMatch ||
-    candidates[0] ||
-    all[0] ||
-    null;
-
-  state.voiceName =
-    picked?.name || "";
-
-  emit();
-
-  return picked;
+  return pool[
+    Math.floor(Math.random() * pool.length)
+  ];
 }
 
-function cleanText(text = "") {
-  return String(text)
-    .replace(
-      /[\u{1F300}-\u{1FAFF}]/gu,
-      ""
-    )
-    .replace(/\s+/g, " ")
-    .trim();
+function variationFor(kind, emotion = {}) {
+  const energy =
+    clamp(emotion.energy, 0, 1);
+
+  const annoyance =
+    clamp(emotion.annoyance, 0, 1);
+
+  const surprise =
+    clamp(emotion.surprise, 0, 1);
+
+  let rate =
+    0.97 +
+    (Math.random() * 0.08 - 0.04);
+
+  let volume =
+    0.68 +
+    Math.random() * 0.12;
+
+  if (
+    kind === "surpriseBig" ||
+    kind === "initiative"
+  ) {
+    rate +=
+      0.04 + energy * 0.05;
+
+    volume += 0.06;
+  }
+
+  if (
+    kind === "annoyed" ||
+    kind === "frustrated"
+  ) {
+    rate -=
+      0.03 + annoyance * 0.025;
+  }
+
+  if (
+    kind === "think" ||
+    kind === "thinkLong"
+  ) {
+    rate -= 0.05;
+    volume -= 0.08;
+  }
+
+  if (surprise > 0.7) {
+    rate += 0.035;
+  }
+
+  return {
+    rate:
+      clamp(rate, 0.86, 1.14),
+    volume:
+      clamp(volume, 0.48, 0.9),
+  };
 }
 
-async function speakInternal(
-  text,
+function shouldStaySilent({
+  kind,
+  spontaneous = false,
+  emotion = {},
+}) {
+  if (spontaneous && kind === "initiative") {
+    return Math.random() < 0.18;
+  }
+
+  const strong =
+    kind === "surpriseBig" ||
+    kind === "annoyed" ||
+    kind === "frustrated" ||
+    kind === "laugh";
+
+  if (strong) {
+    return Math.random() < 0.34;
+  }
+
+  const energy =
+    clamp(emotion.energy, 0, 1);
+
+  // Silence is part of Zero's voice.
+  // Normal replies should NOT make a vocal sound every time.
+  const silentChance =
+    energy > 0.72
+      ? 0.48
+      : 0.62;
+
+  return Math.random() < silentChance;
+}
+
+function chooseReaction({
+  mood = "replying",
+  action = "none",
+  emotion = {},
+  spontaneous = false,
+} = {}) {
+  const humor =
+    clamp(emotion.humor, 0, 1);
+
+  const annoyance =
+    clamp(emotion.annoyance, 0, 1);
+
+  const surprise =
+    clamp(emotion.surprise, 0, 1);
+
+  const warmth =
+    clamp(emotion.warmth, 0, 1);
+
+  if (spontaneous) {
+    return "initiative";
+  }
+
+  if (
+    action === "surprised" ||
+    surprise > 0.72
+  ) {
+    return surprise > 0.86
+      ? "surpriseBig"
+      : pick(pools.surprised);
+  }
+
+  if (
+    action === "laugh" ||
+    humor > 0.68 ||
+    mood === "funny"
+  ) {
+    return "laugh";
+  }
+
+  if (
+    action === "refuse" ||
+    mood === "sharp" ||
+    annoyance > 0.72
+  ) {
+    return annoyance > 0.86
+      ? "frustrated"
+      : "annoyed";
+  }
+
+  if (
+    action === "think" ||
+    mood === "thinking"
+  ) {
+    return pick(pools.think);
+  }
+
+  if (
+    action === "soften" ||
+    mood === "warm" ||
+    warmth > 0.75
+  ) {
+    return pick(pools.warm);
+  }
+
+  if (
+    mood === "hyped" ||
+    action === "excited"
+  ) {
+    return Math.random() < 0.55
+      ? "initiative"
+      : "laugh";
+  }
+
+  // Neutral replies only occasionally get a tiny reaction.
+  const neutralRoll = Math.random();
+
+  if (neutralRoll < 0.22) {
+    return "think";
+  }
+
+  if (neutralRoll < 0.34) {
+    return "realize";
+  }
+
+  return "";
+}
+
+async function playReaction(
+  kind,
   {
-    language = "fr",
-    mood = "replying",
+    emotion = {},
+    spontaneous = false,
     force = false,
   } = {}
 ) {
-  if (!state.supported) {
-    return {
-      ok: false,
-      reason: "unsupported",
-    };
+  if (
+    !state.enabled ||
+    !state.supported ||
+    !kind ||
+    !SOUNDS[kind]
+  ) {
+    return false;
   }
 
-  if (!force && !state.enabled) {
-    return {
-      ok: false,
-      reason: "disabled",
-    };
-  }
+  const now = Date.now();
 
-  const clean =
-    cleanText(text);
-
-  if (!clean) {
-    return {
-      ok: false,
-      reason: "empty",
-    };
-  }
-
-  // Prevent React rerenders from speaking the exact same reply twice.
+  // Hard anti-spam.
   if (
     !force &&
-    clean === lastText &&
-    Date.now() - lastSpokenAt < 5000
+    now - lastPlayedAt < 1800
   ) {
-    return {
-      ok: false,
-      reason: "duplicate",
-    };
+    return false;
   }
 
-  refreshVoices();
+  const strong =
+    [
+      "surpriseBig",
+      "frustrated",
+      "annoyed",
+      "laugh",
+      "initiative",
+    ].includes(kind);
 
-  const utterance =
-    new SpeechSynthesisUtterance(clean);
-
-  const settings =
-    SETTINGS[mood] ||
-    SETTINGS.replying;
-
-  const voice =
-    bestVoice(language);
-
-  utterance.lang =
-    langCode(language);
-
-  if (voice) {
-    utterance.voice = voice;
+  if (
+    !force &&
+    strong &&
+    now - lastStrongAt < 5200
+  ) {
+    return false;
   }
 
-  utterance.rate =
-    settings.rate;
+  if (
+    !force &&
+    shouldStaySilent({
+      kind,
+      spontaneous,
+      emotion,
+    })
+  ) {
+    return false;
+  }
 
-  utterance.pitch =
-    settings.pitch;
+  if (currentAudio) {
+    try {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    } catch {
+      // ignore
+    }
+  }
 
-  utterance.volume = 0.92;
+  const audio =
+    new Audio(SOUNDS[kind]);
 
-  window.speechSynthesis.cancel();
-
-  lastText = clean;
-  lastSpokenAt = Date.now();
-
-  return await new Promise((resolve) => {
-    let finished = false;
-
-    const done = (result) => {
-      if (finished) return;
-      finished = true;
-      resolve(result);
-    };
-
-    utterance.onstart = () => {
-      console.log("ZERO_VOICE_START", {
-        text: clean,
-        language,
-        mood,
-        voice:
-          utterance.voice?.name ||
-          "system-default",
-      });
-    };
-
-    utterance.onend = () =>
-      done({ ok: true });
-
-    utterance.onerror = (event) => {
-      console.warn(
-        "ZERO_VOICE_ERROR",
-        event?.error || event
-      );
-
-      done({
-        ok: false,
-        reason:
-          event?.error || "speech-error",
-      });
-    };
-
-    window.speechSynthesis.speak(
-      utterance
+  const variation =
+    variationFor(
+      kind,
+      emotion
     );
 
-    // Some browsers are flaky with callbacks.
-    window.setTimeout(
-      () => done({ ok: true }),
-      Math.max(
-        3000,
-        clean.length * 95
-      )
+  audio.preload = "auto";
+  audio.volume =
+    variation.volume;
+
+  // HTMLAudio playbackRate gives us subtle reusable variation
+  // without altering the original files.
+  audio.playbackRate =
+    variation.rate;
+
+  currentAudio = audio;
+  lastSound = kind;
+  lastPlayedAt = now;
+
+  if (strong) {
+    lastStrongAt = now;
+  }
+
+  try {
+    await audio.play();
+    return true;
+  } catch (error) {
+    console.warn(
+      "ZERO_LOCAL_VOICE_ERROR",
+      kind,
+      error
     );
-  });
-}
 
-if (state.supported) {
-  refreshVoices();
-
-  window.speechSynthesis.addEventListener?.(
-    "voiceschanged",
-    refreshVoices
-  );
-
-  // Chromium sometimes only exposes voices later.
-  window.setTimeout(
-    refreshVoices,
-    300
-  );
-
-  window.setTimeout(
-    refreshVoices,
-    1200
-  );
+    return false;
+  }
 }
 
 export const zeroVoice = {
@@ -266,15 +368,14 @@ export const zeroVoice = {
       Boolean(value);
 
     localStorage.setItem(
-      KEY,
+      STORAGE_KEY,
       state.enabled ? "1" : "0"
     );
 
     if (!state.enabled) {
-      window.speechSynthesis?.cancel?.();
+      this.stop();
     }
 
-    refreshVoices();
     emit();
   },
 
@@ -287,32 +388,48 @@ export const zeroVoice = {
   },
 
   stop() {
-    if (!state.supported) return;
-    window.speechSynthesis.cancel();
+    if (!currentAudio) return;
+
+    try {
+      currentAudio.pause();
+      currentAudio.currentTime = 0;
+    } catch {
+      // ignore
+    }
+
+    currentAudio = null;
   },
 
-  speak(text, options) {
-    return speakInternal(
-      text,
-      options
+  react({
+    mood = "replying",
+    action = "none",
+    emotion = {},
+    spontaneous = false,
+    force = false,
+  } = {}) {
+    const kind =
+      chooseReaction({
+        mood,
+        action,
+        emotion,
+        spontaneous,
+      });
+
+    return playReaction(
+      kind,
+      {
+        emotion,
+        spontaneous,
+        force,
+      }
     );
   },
 
-  test(language = "fr") {
-    const lines = {
-      fr: "eh. ouais là tu m'entends.",
-      en: "yeah. you can hear me now.",
-      id: "eh. sekarang kedengeran kan.",
-    };
-
-    // TEST is always allowed because it comes directly from a user click.
-    return speakInternal(
-      lines[language] || lines.fr,
-      {
-        language,
-        mood: "idle",
-        force: true,
-      }
+  // Used only internally if we later want a specific local reaction.
+  play(kind, options = {}) {
+    return playReaction(
+      kind,
+      options
     );
   },
 };
