@@ -1,5 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
-import { ZERO_CONFIG, getGameConfig } from "./zero-config";
+import { ZERO_CONFIG } from "./zero-config";
 import {
   getRelationshipAgeDays,
   getRelationshipDescriptors,
@@ -11,10 +11,9 @@ import {
   formatDuration,
   getArcadePassRemainingMs,
   getCoreBoostRemainingMs,
-  hasArcadePass,
 } from "./zero-economy";
 
-import { hasWalletArcadePass, getWalletCoreMultiplier } from "./zero-wallet";
+import { getWalletCoreMultiplier } from "./zero-wallet";
 import { getZeroCopy } from "./zero-i18n";
 
 function Meter({ label, value }) {
@@ -78,7 +77,6 @@ export default function ZeroCorePanel({
   rewardLoading,
   onClose,
   onReward,
-  onOpenArcade,
   onOpenShop,
   language = "fr",
 }) {
@@ -189,8 +187,6 @@ export default function ZeroCorePanel({
   const rewardedAvailable =
     !isPremium && canWatchRewarded(economy);
 
-  const games = Object.entries(ZERO_CONFIG.arcade.games);
-
   return (
     <AnimatePresence>
       {open ? (
@@ -267,9 +263,6 @@ export default function ZeroCorePanel({
 
               <div className="zero63-core-loop-actions">
                 <span>💬 {gameLoopCopy.talk}</span>
-                <button type="button" onClick={onOpenArcade}>
-                  ▶ {gameLoopCopy.play}
-                </button>
               </div>
             </section>
 
@@ -290,7 +283,7 @@ export default function ZeroCorePanel({
 
               <button
                 type="button"
-                onClick={onOpenArcade}
+                
               >
                 <span className="zero-v6-arcade-glyph">
                   ✦
@@ -341,44 +334,7 @@ export default function ZeroCorePanel({
               </div>
             </section>
 
-            <section className="zero-v5-core-section">
-              <div className="zero-v5-section-title">
-                <span>{copy.common.arcade}</span>
-                <button type="button" onClick={onOpenArcade}>
-                  ouvrir
-                </button>
-              </div>
-
-              <div className="zero-v5-game-strip">
-                {games.map(([id, config]) => {
-                  const unlocked =
-                    isPremium ||
-                    Number(relationship?.totalEnergy || 0) >=
-                      config.unlockEnergy ||
-                    hasArcadePass(economy) ||
-                    hasWalletArcadePass(wallet);
-
-                  return (
-                    <button
-                      key={id}
-                      type="button"
-                      className={unlocked ? "is-open" : "is-locked"}
-                      onClick={onOpenArcade}
-                    >
-                      <i />
-                      <span>
-                        {copy.games?.[id] || config.label}
-                      </span>
-                      <small>
-                        {unlocked
-                          ? copy.common.play
-                          : `Core ${config.unlockEnergy}`}
-                      </small>
-                    </button>
-                  );
-                })}
-              </div>
-            </section>
+            
 
             {boostedMs > 0 ||
             arcadeMs > 0 ||

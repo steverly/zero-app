@@ -33,6 +33,7 @@ const DEFAULT_GAME_PROFILE = {
   lastPlayedAt: 0,
   favoriteGame: "",
   gameCounts: {},
+  gameResults: {},
 };
 
 function todayKey() {
@@ -124,6 +125,9 @@ export function loadRelationship() {
         ...(saved?.gameProfile || {}),
         gameCounts: {
           ...(saved?.gameProfile?.gameCounts || {}),
+        },
+        gameResults: {
+          ...(saved?.gameProfile?.gameResults || {}),
         },
       },
     };
@@ -556,6 +560,9 @@ export function evolveRelationshipFromGame(
     gameCounts: {
       ...(relationship.gameProfile?.gameCounts || {}),
     },
+    gameResults: {
+      ...(relationship.gameProfile?.gameResults || {}),
+    },
   };
 
   profile.gamesPlayed += 1;
@@ -564,6 +571,33 @@ export function evolveRelationshipFromGame(
   profile.lastPlayedAt = now();
   profile.gameCounts[gameId] =
     Number(profile.gameCounts[gameId] || 0) + 1;
+
+  const gameResult = {
+    played: 0,
+    wins: 0,
+    losses: 0,
+    draws: 0,
+    avgReactionMs: 0,
+    ...(profile.gameResults?.[gameId] || {}),
+  };
+
+  gameResult.played += 1;
+
+  if (result === "win") gameResult.wins += 1;
+  if (result === "loss") gameResult.losses += 1;
+  if (result === "draw") gameResult.draws += 1;
+
+  if (reactionMs > 0) {
+    gameResult.avgReactionMs =
+      gameResult.avgReactionMs > 0
+        ? Math.round(
+            gameResult.avgReactionMs * 0.72 +
+            reactionMs * 0.28
+          )
+        : Math.round(reactionMs);
+  }
+
+  profile.gameResults[gameId] = gameResult;
 
   if (result === "win") profile.wins += 1;
   if (result === "loss") profile.losses += 1;
@@ -697,7 +731,7 @@ function filterAdoptedExpressions(expressions, language) {
   ]);
 
   const frTokens = new Set([
-    "mdr", "mdrr", "ptdr", "jpp", "jsp", "oe", "ouais",
+    "mdr", "mdrr", "ptdr", "jpp", "jsp", "tfq", "pq", "tkt", "vrm", "mtn", "stv", "oe", "ouais",
     "nan", "grave", "wesh", "vas-y", "vasy", "frérot", "frr",
     "bg", "j'avoue", "j’avoue",
   ]);

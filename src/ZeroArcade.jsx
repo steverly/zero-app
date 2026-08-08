@@ -30,6 +30,94 @@ function ZeroLine({ children }) {
   );
 }
 
+function gameSkill(relationship, gameId) {
+  const stats =
+    relationship?.gameProfile?.gameResults?.[gameId] || {};
+
+  const played = Number(stats.played || 0);
+  const wins = Number(stats.wins || 0);
+  const losses = Number(stats.losses || 0);
+  const draws = Number(stats.draws || 0);
+
+  const resolved =
+    Math.max(1, wins + losses + draws);
+
+  const winRate =
+    wins / resolved;
+
+  // Zero learns quickly at first, then the curve stabilizes.
+  // Winning pushes him up much faster; losing lets the player breathe.
+  const experience =
+    1 - Math.exp(-played / 8);
+
+  const pressure =
+    Math.max(
+      0,
+      Math.min(
+        1,
+        0.12 +
+          experience * 0.42 +
+          winRate * 0.48 -
+          (losses > wins ? 0.08 : 0)
+      )
+    );
+
+  return pressure;
+}
+
+function skillLabel(skill, language = "fr") {
+  if (skill < 0.28) {
+    return language === "id"
+      ? "Zero lagi belajar"
+      : language === "en"
+        ? "Zero is learning"
+        : "Zero apprend";
+  }
+
+  if (skill < 0.52) {
+    return language === "id"
+      ? "Zero mulai ngikutin kamu"
+      : language === "en"
+        ? "Zero is adapting"
+        : "Zero s'adapte";
+  }
+
+  if (skill < 0.76) {
+    return language === "id"
+      ? "Zero serius sekarang"
+      : language === "en"
+        ? "Zero is serious now"
+        : "Zero devient sérieux";
+  }
+
+  if (skill < 0.92) {
+    return language === "id"
+      ? "Zero udah baca ritmemu"
+      : language === "en"
+        ? "Zero knows your rhythm"
+        : "Zero connaît ton rythme";
+  }
+
+  return language === "id"
+    ? "Zero gila mode"
+    : language === "en"
+      ? "Zero is cracked"
+      : "Zero est en mode monstre";
+}
+
+function AdaptiveBadge({ relationship, gameId, language }) {
+  const skill = gameSkill(relationship, gameId);
+
+  return (
+    <div className="zero641-skill-badge">
+      <span>{skillLabel(skill, language)}</span>
+      <i>
+        <b style={{ transform: `scaleX(${Math.max(0.08, skill)})` }} />
+      </i>
+    </div>
+  );
+}
+
 function localComment(kind, relationship, language = "fr") {
   const familiar = Number(
     relationship?.traits?.familiarity || 0.08
@@ -158,9 +246,8 @@ function minimax(board, maximizing) {
 }
 
 function zeroTttMove(board, relationship) {
-  const familiarity = Number(
-    relationship?.traits?.familiarity || 0.08
-  );
+  const skill =
+    gameSkill(relationship, "tictactoe");
 
   const available = board
     .map((value, index) =>
@@ -170,8 +257,8 @@ function zeroTttMove(board, relationship) {
 
   const mistakeChance =
     Math.max(
-      0.045,
-      0.2 - familiarity * 0.13
+      0.005,
+      0.27 - skill * 0.29
     );
 
   if (Math.random() < mistakeChance) {
@@ -306,6 +393,11 @@ function TicTacToe({
   return (
     <div className="zero-game zero-game-ttt">
       <ZeroLine>{line}</ZeroLine>
+      <AdaptiveBadge
+        relationship={relationship}
+        gameId="tictactoe"
+        language={language}
+      />
 
       <div className="zero-ttt-board">
         {board.map((cell, index) => (
@@ -459,24 +551,33 @@ function zeroConnect4Move(
     }
   }
 
-  const familiarity = Number(
-    relationship?.traits?.familiarity ||
-      0.08
-  );
+  const skill =
+    gameSkill(relationship, "connect4");
 
   const ordered =
     [3, 2, 4, 1, 5, 0, 6].filter(
       (col) => available.includes(col)
     );
 
-  const top = Math.min(
-    ordered.length,
-    familiarity > 0.45 ? 2 : 4
-  );
+  // Early Zero explores and makes human-like mistakes.
+  // Strong Zero increasingly values centre control and safe columns.
+  const top =
+    skill > 0.88
+      ? 1
+      : skill > 0.62
+        ? Math.min(2, ordered.length)
+        : skill > 0.35
+          ? Math.min(3, ordered.length)
+          : Math.min(5, ordered.length);
 
-  return pick(
-    ordered.slice(0, top)
-  );
+  if (
+    skill < 0.78 &&
+    Math.random() < 0.2 - skill * 0.16
+  ) {
+    return pick(available);
+  }
+
+  return pick(ordered.slice(0, top));
 }
 
 function ConnectFour({
@@ -586,6 +687,11 @@ function ConnectFour({
   return (
     <div className="zero-game zero-game-c4">
       <ZeroLine>{line}</ZeroLine>
+      <AdaptiveBadge
+        relationship={relationship}
+        gameId="connect4"
+        language={language}
+      />
 
       <div className="zero-c4-board">
         {board.map(
@@ -639,6 +745,26 @@ function ReflexGame({
 
   const [reaction, setReaction] =
     useState(0);
+
+  const skill =
+    gameSkill(relationship, "reflex");
+
+  const learnedReaction =
+    Number(
+      relationship?.gameProfile?.gameResults?.reflex
+        ?.avgReactionMs || 330
+    );
+
+  // Zero's bar moves toward the player's actual level.
+  // At high mastery the player has to beat their own learned pace.
+  const targetMs =
+    Math.max(
+      145,
+      Math.round(
+        learnedReaction *
+          (1.12 - skill * 0.25)
+      )
+    );
 
   const startAtRef = useRef(0);
   const timerRef = useRef(null);
@@ -717,7 +843,7 @@ function ReflexGame({
     onFinish({
       gameId: "reflex",
       result:
-        ms < 330
+        ms <= targetMs
           ? "win"
           : "loss",
       reactionMs: ms,
@@ -727,6 +853,18 @@ function ReflexGame({
   return (
     <div className="zero-game zero-game-reflex">
       <ZeroLine>{line}</ZeroLine>
+      <AdaptiveBadge
+        relationship={relationship}
+        gameId="reflex"
+        language={language}
+      />
+      <small className="zero641-target">
+        {language === "id"
+          ? `target ${targetMs} ms`
+          : language === "en"
+            ? `target ${targetMs} ms`
+            : `objectif ${targetMs} ms`}
+      </small>
 
       <button
         type="button"
@@ -1223,6 +1361,11 @@ function MemoryDuel({
   return (
     <div className="zero-game zero-game-memory">
       <ZeroLine>{line}</ZeroLine>
+      <AdaptiveBadge
+        relationship={relationship}
+        gameId="memory"
+        language={language}
+      />
 
       <div className="zero-memory-score">
         <span>
@@ -1292,7 +1435,15 @@ function TapDuel({
   onFinish,
   language = "fr",
 }) {
-  const target = 20;
+  const skill =
+    gameSkill(relationship, "tapduel");
+
+  const target =
+    skill > 0.88
+      ? 32
+      : skill > 0.62
+        ? 26
+        : 20;
 
   const copy = {
     fr: {
@@ -1334,12 +1485,14 @@ function TapDuel({
   useEffect(() => {
     if (!started || done) return;
 
-    const familiarity = Number(
-      relationship?.traits?.familiarity || 0.08
-    );
-
-    const base =
-      250 - familiarity * 55;
+    // Starts intentionally beatable.
+    // If the player keeps winning, Zero can eventually reach
+    // genuinely nasty tapping speeds.
+    const intervalMs =
+      Math.max(
+        62,
+        205 - skill * 143
+      );
 
     const timer = window.setInterval(() => {
       setZeroScore((previous) => {
@@ -1347,9 +1500,19 @@ function TapDuel({
           return target;
         }
 
-        return previous + 1;
+        // At elite level Zero occasionally bursts two taps.
+        const burst =
+          skill > 0.9 &&
+          Math.random() < 0.13
+            ? 2
+            : 1;
+
+        return Math.min(
+          target,
+          previous + burst
+        );
       });
-    }, Math.max(135, base + Math.random() * 75));
+    }, intervalMs + Math.random() * (34 - skill * 22));
 
     return () => window.clearInterval(timer);
   }, [started, done, relationship]);
@@ -1425,6 +1588,11 @@ function TapDuel({
   return (
     <div className="zero-game zero-game-tapduel">
       <ZeroLine>{line}</ZeroLine>
+      <AdaptiveBadge
+        relationship={relationship}
+        gameId="tapduel"
+        language={language}
+      />
 
       <div className="zero63-tap-race">
         <div className="zero63-tap-score">
@@ -1433,7 +1601,7 @@ function TapDuel({
             <strong>{userScore}</strong>
           </span>
 
-          <i>20</i>
+          <i>{target}</i>
 
           <span className="is-zero">
             <small>{copy.zero}</small>
@@ -1489,14 +1657,31 @@ function SecretNumber({
   language = "fr",
 }) {
   const copy = getZeroCopy(language);
+  const skill =
+    gameSkill(relationship, "secret");
+
+  const secretMax =
+    skill > 0.78
+      ? 60
+      : skill > 0.46
+        ? 35
+        : 20;
+
+  const maxTries =
+    skill > 0.78
+      ? 6
+      : skill > 0.46
+        ? 6
+        : 7;
+
   const makeSecret = () =>
-    Math.floor(Math.random() * 20) + 1;
+    Math.floor(Math.random() * secretMax) + 1;
 
   const [secret, setSecret] =
     useState(makeSecret);
 
   const [guess, setGuess] =
-    useState(10);
+    useState(() => Math.ceil(secretMax / 2));
 
   const [tries, setTries] =
     useState(0);
@@ -1532,7 +1717,7 @@ function SecretNumber({
       return;
     }
 
-    if (nextTries >= 6) {
+    if (nextTries >= maxTries) {
       setDone(true);
       setLine(`${secret}.`);
 
@@ -1554,7 +1739,7 @@ function SecretNumber({
   const restart = () => {
     gameSfx.tap();
     setSecret(makeSecret());
-    setGuess(10);
+    setGuess(Math.ceil(secretMax / 2));
     setTries(0);
     setDone(false);
     setLine(copy.arcade.secretRange);
@@ -1563,6 +1748,11 @@ function SecretNumber({
   return (
     <div className="zero-game zero-game-secret">
       <ZeroLine>{line}</ZeroLine>
+      <AdaptiveBadge
+        relationship={relationship}
+        gameId="secret"
+        language={language}
+      />
 
       <div className="zero-secret-stage">
         <div className="zero-secret-eye">
@@ -1587,7 +1777,7 @@ function SecretNumber({
         <input
           type="range"
           min="1"
-          max="20"
+          max={secretMax}
           value={guess}
           disabled={done}
           onChange={(event) => {
@@ -1599,7 +1789,7 @@ function SecretNumber({
         />
 
         <small>
-          {tries}/6 {copy.arcade.attempts}
+          {tries}/{maxTries} {copy.arcade.attempts}
         </small>
       </div>
 
@@ -1625,9 +1815,9 @@ function SecretNumber({
 const CODE_SYMBOLS =
   ["◆", "●", "▲", "■"];
 
-function makeCode() {
+function makeCode(length = 3) {
   return Array.from(
-    { length: 3 },
+    { length },
     () => pick(CODE_SYMBOLS)
   );
 }
@@ -1638,11 +1828,23 @@ function Codebreaker({
   language = "fr",
 }) {
   const copy = getZeroCopy(language);
+  const skill =
+    gameSkill(relationship, "codebreaker");
+
+  const codeLength =
+    skill > 0.72 ? 4 : 3;
+
+  const maxAttempts =
+    codeLength === 4 ? 8 : 7;
+
+  const freshGuess = () =>
+    Array(codeLength).fill("◆");
+
   const [secret, setSecret] =
-    useState(makeCode);
+    useState(() => makeCode(codeLength));
 
   const [guess, setGuess] =
-    useState(["◆", "◆", "◆"]);
+    useState(freshGuess);
 
   const [history, setHistory] =
     useState([]);
@@ -1695,7 +1897,7 @@ function Codebreaker({
 
     setHistory(nextHistory);
 
-    if (exact === 3) {
+    if (exact === codeLength) {
       setDone(true);
       setLine("bien vu");
 
@@ -1710,7 +1912,7 @@ function Codebreaker({
       return;
     }
 
-    if (nextHistory.length >= 7) {
+    if (nextHistory.length >= maxAttempts) {
       setDone(true);
       setLine(
         secret.join(" ")
@@ -1733,8 +1935,8 @@ function Codebreaker({
 
   const restart = () => {
     gameSfx.tap();
-    setSecret(makeCode());
-    setGuess(["◆", "◆", "◆"]);
+    setSecret(makeCode(codeLength));
+    setGuess(freshGuess());
     setHistory([]);
     setDone(false);
     setLine(copy.arcade.findCode);
@@ -1743,6 +1945,11 @@ function Codebreaker({
   return (
     <div className="zero-game zero-game-code">
       <ZeroLine>{line}</ZeroLine>
+      <AdaptiveBadge
+        relationship={relationship}
+        gameId="codebreaker"
+        language={language}
+      />
 
       <div className="zero-code-input">
         {guess.map(
@@ -1791,7 +1998,7 @@ function Codebreaker({
               </span>
 
               <strong>
-                {entry.exact}/3
+                {entry.exact}/{codeLength}
               </strong>
             </motion.div>
           ))}

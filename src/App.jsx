@@ -1222,6 +1222,18 @@ const handleRewardedAd = async () => {
     lastHumanActivityRef.current = Date.now();
   };
 
+  const openArcadeFromHome = () => {
+    markHumanActivity();
+    setCoreOpen(false);
+    setShopOpen(false);
+    setWalletOpen(false);
+    setSettingsOpen(false);
+    setPaywallOpen(false);
+    setPremiumOpen(false);
+    setArcadeOpen(true);
+    gameSfx.arrive();
+  };
+
   const handleSubmit = async () => {
   const clean = input.trim();
 
@@ -1932,11 +1944,7 @@ if (!appReady) {
           ? "Play with Zero"
           : "Jouer avec Zero"
     }
-    onClick={() => {
-      gameSfx.arrive();
-      setArcadeOpen(true);
-      markHumanActivity();
-    }}
+    onClick={openArcadeFromHome}
     whileTap={{ scale: 0.91 }}
     whileHover={{ scale: 1.04 }}
   >
@@ -1961,18 +1969,6 @@ if (!appReady) {
           : "avec Zero"}
     </small>
   </motion.button>
-
-  <div className="zero64-purpose">
-    <span className="zero64-purpose-heart">♥</span>
-    <span>
-      {language === "id"
-        ? "ngobrol · main · bentuk Zero kamu"
-        : language === "en"
-          ? "talk · play · shape your Zero"
-          : "parle · joue · façonne ton Zero"}
-    </span>
-  </div>
- 
 <ZeroEntity
   mood={mood}
   action={zeroAction}
@@ -2044,10 +2040,6 @@ if (!appReady) {
   rewardLoading={paywallLoading}
   onClose={() => setCoreOpen(false)}
   onReward={handleRewardedAd}
-  onOpenArcade={() => {
-    setCoreOpen(false);
-    setArcadeOpen(true);
-  }}
   onOpenShop={() => {
     setCoreOpen(false);
     setShopOpen(true);
