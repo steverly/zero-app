@@ -36,6 +36,8 @@ import ZeroCosmeticsLayer, { cosmeticClassNames } from "./ZeroCosmeticsLayer";
 import ZeroWorldBackground from "./ZeroWorldBackground";
 import { getCosmeticState } from "./zero-wallet";
 
+import { zeroVoice } from "./zero-voice";
+
 import {
   loadWallet,
   saveWallet,
@@ -382,11 +384,33 @@ function CenterReply({
   awayAccelerating = false,
   reconciliationStage = 0,
 }) {
-  useEffect(() => {
-    if (reply && !loading) {
-      sfx.arrive();
-    }
-  }, [reply, loading]);
+useEffect(() => {
+  if (!reply || loading) {
+    return;
+  }
+
+  sfx.arrive();
+
+  const timer =
+    window.setTimeout(() => {
+      zeroVoice.speak(
+        reply,
+        {
+          language,
+          mood,
+        }
+      );
+    }, 180);
+
+  return () => {
+    window.clearTimeout(timer);
+  };
+}, [
+  reply,
+  loading,
+  language,
+  mood,
+]);
 
   const humor = Number(emotion?.humor || 0);
   const surprise = Number(emotion?.surprise || 0);
