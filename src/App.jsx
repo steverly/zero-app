@@ -146,16 +146,44 @@ async function apiPost(path, body) {
   return data;
 }
 
+function isMeaninglessZeroReply(value) {
+  const clean =
+    String(value || "").trim();
+
+  if (!clean) return true;
+
+  // A finished Zero reply must contain actual semantic content.
+  // Loader dots belong to UI only.
+  return !/[\p{L}\p{N}\p{Extended_Pictographic}]/u.test(clean);
+}
+
+function zeroTinyFallback(language = "fr") {
+  if (language === "en") return "huh";
+  if (language === "id") return "hah";
+  return "hein";
+}
+
 async function sendToBot(payload) {
   const data = await apiPost("/api/reply", payload);
 
   return {
-    reply:
-      typeof data?.reply === "string" && data.reply.trim()
-        ? data.reply
-            .trim()
-            .slice(0, ZERO_CONFIG.chat.maxZeroReplyChars)
-        : "...",
+    reply: (() => {
+      const raw =
+        typeof data?.reply === "string"
+          ? data.reply.trim()
+          : "";
+
+      if (isMeaninglessZeroReply(raw)) {
+        return zeroTinyFallback(
+          payload?.language || "fr"
+        );
+      }
+
+      return raw.slice(
+        0,
+        ZERO_CONFIG.chat.maxZeroReplyChars
+      );
+    })(),
 
     emotion: data?.emotion || {
       energy: 0.55,
@@ -171,10 +199,16 @@ async function sendToBot(payload) {
 
     followUp: {
       shouldSend: data?.followUp?.shouldSend === true,
-      message:
-        typeof data?.followUp?.message === "string"
-          ? data.followUp.message.trim()
-          : "",
+      message: (() => {
+        const raw =
+          typeof data?.followUp?.message === "string"
+            ? data.followUp.message.trim()
+            : "";
+
+        return isMeaninglessZeroReply(raw)
+          ? ""
+          : raw;
+      })(),
       delayMs:
         typeof data?.followUp?.delayMs === "number"
           ? data.followUp.delayMs
@@ -375,6 +409,7 @@ function CenterReply({
   language = "fr",
   spontaneous = false,
   promptType = "",
+  promptText = "",
   onPromptYes,
   onPromptNo,
   away = false,
@@ -537,7 +572,10 @@ function CenterReply({
                 </span>
               )}
             </div>
-            {spontaneous && promptType === "play" ? (
+            {spontaneous &&
+            promptType === "play" &&
+            Boolean(promptText) &&
+            reply === promptText ? (
               <motion.div
                 className="zero72-choice-row"
                 initial={{ opacity: 0, y: 8 }}
@@ -2138,6 +2176,11 @@ const triggerZeroInitiative = async ({
     )
     .slice(-MAX_MEMORY_MESSAGES);
 
+  // A real AI conversation initiative is NEVER a game prompt.
+  // Clear any stale local play proposal before replacing the visible reply.
+  setSpontaneousPrompt(null);
+  setZeroImpulse(null);
+
   setZeroInitiative(true);
   setLoading(true);
   setMood("thinking");
@@ -2769,8 +2812,21 @@ if (!appReady) {
     mood={mood}
     emotion={emotion}
     language={language}
-    spontaneous={spontaneousPrompt?.type === "play"}
-    promptType={spontaneousPrompt?.type === "play" ? "play" : ""}
+    spontaneous={
+      spontaneousPrompt?.type === "play" &&
+      Boolean(spontaneousPrompt?.text) &&
+      reply === spontaneousPrompt.text
+    }
+    promptType={
+      spontaneousPrompt?.type === "play"
+        ? "play"
+        : ""
+    }
+    promptText={
+      spontaneousPrompt?.type === "play"
+        ? spontaneousPrompt.text
+        : ""
+    }
     onPromptYes={acceptSpontaneousPrompt}
     onPromptNo={rejectSpontaneousPrompt}
     away={boundaryState.mode === "away"}
