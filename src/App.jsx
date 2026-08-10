@@ -383,33 +383,31 @@ function CenterReply({
   awayAccelerating = false,
   reconciliationStage = 0,
 }) {
-  useEffect(() => {
-    if (!reply || loading) {
-      return undefined;
-    }
+ useEffect(() => {
+  if (!reply || loading) {
+    return undefined;
+  }
 
-    sfx.arrive();
+  sfx.arrive();
 
-    const timer =
-      window.setTimeout(() => {
-        zeroVoice.react({
-          mood,
-          action,
-          emotion,
-          spontaneous,
-        });
-      }, spontaneous ? 90 : 170);
+  const timer = window.setTimeout(() => {
+    zeroVoice.react({
+      mood,
+      action,
+      emotion,
+      spontaneous,
+    });
+  }, spontaneous ? 90 : 170);
 
-    return () => {
-      window.clearTimeout(timer);
-    };
-  }, [
-    reply,
-    loading,
-    action,
-    spontaneous,
-  ]);
-
+  return () => {
+    window.clearTimeout(timer);
+  };
+}, [
+  reply,
+  loading,
+  action,
+  spontaneous,
+]);
   const humor = Number(emotion?.humor || 0);
   const surprise = Number(emotion?.surprise || 0);
   const annoyance = Number(emotion?.annoyance || 0);
@@ -447,7 +445,7 @@ function CenterReply({
         "center-stage",
         "zero-reply-expression",
         `zero-reply-${expression}`,
-        spontaneous ? "zero72-spontaneous" : "",
+        "",
         away ? "zero72-away-reply" : "",
       ].filter(Boolean).join(" ")}
       data-reply-mood={mood}
@@ -539,7 +537,7 @@ function CenterReply({
                 </span>
               )}
             </div>
-            {spontaneous && promptType ? (
+            {spontaneous && promptType === "play" ? (
               <motion.div
                 className="zero72-choice-row"
                 initial={{ opacity: 0, y: 8 }}
@@ -551,9 +549,7 @@ function CenterReply({
                   className="is-yes"
                   onClick={onPromptYes}
                 >
-                  {promptType === "play"
-                    ? awayCopy?.yes
-                    : awayCopy?.talkYes}
+                  {awayCopy?.yes}
                 </button>
 
                 <button
@@ -561,9 +557,7 @@ function CenterReply({
                   className="is-no"
                   onClick={onPromptNo}
                 >
-                  {promptType === "play"
-                    ? awayCopy?.no
-                    : awayCopy?.talkNo}
+                  {awayCopy?.no}
                 </button>
               </motion.div>
             ) : null}
@@ -1402,7 +1396,7 @@ const followUpTimeoutRef = useRef(null);
 
   useEffect(() => {
     const nextMode =
-      arcadeOpen
+      arcadeOpen && arcadeGameActive
         ? "arcade"
         : "home";
 
@@ -1410,6 +1404,7 @@ const followUpTimeoutRef = useRef(null);
     zeroVoice.setMode(nextMode);
   }, [arcadeOpen, arcadeGameActive]);
 
+  
 
 
   useEffect(() => {
@@ -1731,36 +1726,20 @@ const handleRewardedAd = async () => {
   const acceptSpontaneousPrompt = () => {
     const prompt = spontaneousPrompt;
 
-    if (!prompt) return false;
+    if (!prompt || prompt.type !== "play") {
+      return false;
+    }
 
     setSpontaneousPrompt(null);
     setZeroImpulse(null);
+    setReply("");
     markHumanActivity();
 
-    if (prompt.type === "play") {
-      setReply("");
-      openArcadeFromHome(
-        prompt.gameId || ""
-      );
-      return true;
-    }
+    openArcadeFromHome(
+      prompt.gameId || ""
+    );
 
-    if (prompt.type === "talk") {
-      setReply("");
-      lastHumanActivityRef.current =
-        Date.now() - 60000;
-      lastInitiativeRef.current = 0;
-
-      window.setTimeout(() => {
-        triggerZeroInitiative({
-          forbidGames: true,
-        });
-      }, 100);
-
-      return true;
-    }
-
-    return false;
+    return true;
   };
 
   const rejectSpontaneousPrompt = () => {
@@ -1785,7 +1764,7 @@ const handleRewardedAd = async () => {
   // Typed "oui/go/vas-y/ayo..." must behave exactly like the OUI button
   // and must NOT be sent to the model.
   if (
-    spontaneousPrompt &&
+    spontaneousPrompt?.type === "play" &&
     isPromptAccept(clean, language)
   ) {
     setInput("");
@@ -1794,7 +1773,7 @@ const handleRewardedAd = async () => {
   }
 
   if (
-    spontaneousPrompt &&
+    spontaneousPrompt?.type === "play" &&
     isPromptReject(clean, language)
   ) {
     setInput("");
@@ -2090,7 +2069,7 @@ useEffect(() => {
           relationship
         );
 
-        if (impulse) {
+        if (impulse?.type === "play" && impulse.gameId) {
           setZeroImpulse(impulse);
           setSpontaneousPrompt(impulse);
           setReply(impulse.text);
@@ -2100,12 +2079,7 @@ useEffect(() => {
             markImpulseShown(previous, impulse)
           );
 
-          setMood(
-            impulse.type === "play"
-              ? "hyped"
-              : "curious"
-          );
-
+          setMood("hyped");
           gameSfx.soft();
 
           window.setTimeout(() => {
@@ -2795,8 +2769,8 @@ if (!appReady) {
     mood={mood}
     emotion={emotion}
     language={language}
-    spontaneous={Boolean(spontaneousPrompt)}
-    promptType={spontaneousPrompt?.type || ""}
+    spontaneous={spontaneousPrompt?.type === "play"}
+    promptType={spontaneousPrompt?.type === "play" ? "play" : ""}
     onPromptYes={acceptSpontaneousPrompt}
     onPromptNo={rejectSpontaneousPrompt}
     away={boundaryState.mode === "away"}
